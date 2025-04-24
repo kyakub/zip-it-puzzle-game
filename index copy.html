@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,26 +41,33 @@
 
         .puzzle-grid {
             display: grid;
-            grid-template-columns: repeat(5, 60px); /* 60px ширина ячейки */
-            grid-template-rows: repeat(5, 60px); /* 60px высота ячейки */
-            gap: 2px; /* Расстояние между ячейками */
+            grid-template-columns: repeat(5, 60px);
+            /* 60px ширина ячейки */
+            grid-template-rows: repeat(5, 60px);
+            /* 60px высота ячейки */
+            gap: 2px;
+            /* Расстояние между ячейками */
             margin-bottom: 20px;
             position: relative;
         }
 
         .cell {
-            width: 60px; /* Ширина ячейки */
-            height: 60px; /* Высота ячейки */
+            width: 60px;
+            /* Ширина ячейки */
+            height: 60px;
+            /* Высота ячейки */
             border: 2px solid #000;
             text-align: center;
-            font-size: 20px; /* Уменьшенный размер текста */
+            font-size: 20px;
+            /* Уменьшенный размер текста */
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
             cursor: pointer;
             border-radius: 5px;
-            user-select: none; /* Отключение выделения текста */
+            user-select: none;
+            /* Отключение выделения текста */
         }
 
         .cell.selected {
@@ -70,7 +78,8 @@
         .buttons {
             display: flex;
             justify-content: center;
-            gap: 20px; /* Расстояние между кнопками */
+            gap: 20px;
+            /* Расстояние между кнопками */
             margin-top: 20px;
         }
 
@@ -78,19 +87,25 @@
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
-            border: 3px solid black; /* Черная окантовка */
-            background-color: white; /* Белый фон */
-            transition: background-color 0.2s ease; /* Эффект перехода */
+            border: 3px solid black;
+            /* Черная окантовка */
+            background-color: white;
+            /* Белый фон */
+            transition: background-color 0.2s ease;
+            /* Эффект перехода */
         }
 
         button:hover {
-            background-color: blue; /* Синий фон при наведении */
-            color: white; /* Белый текст при наведении */
+            background-color: blue;
+            /* Синий фон при наведении */
+            color: white;
+            /* Белый текст при наведении */
         }
 
         .line {
             position: absolute;
-            background-color: rgba(0, 255, 0, 0.7); /* Зеленый цвет для постоянной линии */
+            background-color: rgba(0, 255, 0, 0.7);
+            /* Зеленый цвет для постоянной линии */
             z-index: 1;
             height: 10px;
             border-radius: 5px;
@@ -99,7 +114,8 @@
         }
 
         .line.temp {
-            background-color: rgba(0, 0, 255, 0.5); /* Синий цвет для временной линии */
+            background-color: rgba(0, 0, 255, 0.5);
+            /* Синий цвет для временной линии */
         }
 
         button:focus {
@@ -108,64 +124,46 @@
 
         /* Error message style */
         .error-message {
-            background-color: #ffcccc; /* Красный фон для ошибок */
-            color: red; /* Красный текст для ошибок */
+            background-color: #ffcccc;
+            /* Красный фон для ошибок */
+            color: red;
+            /* Красный текст для ошибок */
             padding: 10px;
             margin-bottom: 20px;
             border-radius: 5px;
             width: 300px;
             text-align: center;
-            display: none; /* Скрыто по умолчанию */
-            transition: background-color 0.3s ease, color 0.3s ease; /* Плавный переход для изменения стиля */
-        }
-
-        #hintMessage {
-            font-size: 18px;
-            margin-top: 20px;
-            color: #3498db; /* Синий цвет текста */
-            text-align: center;
-            display: none; /* Скрыто по умолчанию */
-            transition: opacity 0.3s ease; /* Плавное появление и исчезновение */
-        }
-
-        .hint-message {
-            background-color: #3498db; /* Голубая заливка */
-            color: white; /* Белый текст */
-            padding: 10px;
-            margin-top: 20px;
-            border-radius: 5px;
-            width: 300px;
-            text-align: center;
-            display: none; /* Скрыто по умолчанию */
-            transition: opacity 0.3s ease; /* Плавное появление и исчезновение */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Легкая тень */
+            display: none;
+            /* Скрыто по умолчанию */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Плавный переход для изменения стиля */
         }
 
         .message-box {
-            /* display: none; /* Скрыто по умолчанию */
-            position: absolute;
-            top: 20px; /* Отступ сверху */
-            right: 20px; /* Отступ справа */
-            background-color: white; /* Белая заливка */
-            color: black; /* Черный текст */
-            border: 2px solid black; /* Черная окантовка */
-            border-radius: 4px; /* Округление углов */
-            padding: 8px 15px; /* Отступы внутри */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Легкая тень */
-            z-index: 1000; /* Поверх всех элементов */
-            opacity: 0; /* Прозрачность */
-            transition: opacity 0.3s ease; /* Плавное появление и исчезновение */
+            display: block;
+            align-items: center;
+            background-color: white;
+            color: black;
+            font-size: .85em;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 6px 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateX(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            position: relative;
+            z-index: 1000;
+            word-wrap: break-word;
+            margin-bottom: 8px;
         }
 
-        .message-box span#messageText {
-            margin-right: 10px; /* Внешний отступ справа */
+        .message-box span {
+            flex-grow: 1;
+            margin-right: 10px;
         }
 
         .message-box .close-button {
-            position: absolute;
-            top: 50%; /* По центру по вертикали */
-            transform: translateY(-50%); /* Центрирование */
-            right: 10px; /* Отступ от правой стороны плашки */
             background: none;
             border: none;
             font-size: 16px;
@@ -173,10 +171,23 @@
             cursor: pointer;
             color: black;
             padding: 0;
-            margin-left: 15px; /* Отступ от текста с левой стороны */
+        }
+
+        .message-box .close-button:hover {
+            color: red;
+        }
+
+        #messageContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: grid;
+            justify-items: end;
         }
     </style>
 </head>
+
 <body>
 
     <div class="game-container">
@@ -188,34 +199,24 @@
         <!-- Очки -->
         <div id="score" style="font-size: 20px; margin-bottom: 20px;">Очки: 0</div>
 
-        <!-- Error Message -->
-        <div id="errorMessage" class="error-message" style="display: none;"></div>
-
-        <!-- Hint Message -->
-        <div id="hintMessage" class="hint-message" style="display: none;"></div>
-
         <!-- Puzzle Grid -->
         <div id="puzzleGrid" class="puzzle-grid"></div>
 
-        <!-- Buttons for Undo, Hint, and Restart -->
+        <!-- Buttons for Undo and Restart -->
         <div class="buttons">
             <button id="undoButton">Назад</button>
             <button id="restartButton">Перезапуск</button>
         </div>
     </div>
 
-    <div id="messageBox" class="message-box">
-        <button class="close-button" onclick="hideMessage()">×</button>
-        <span id="messageText"></span>
-    </div>
+    <div id="messageContainer"></div>
 
     <script>
         // Global variables
+        const MESSAGE_DISPLAY_TIME = 10000; // Время отображения сообщений в миллисекундах (10 секунд)
         const gridSize = 5;
         const puzzleGrid = document.getElementById('puzzleGrid');
         let currentPuzzle = [];
-        let currentPath = []; // Keeps track of the sequence of moves
-        let undonePaths = []; // Stores undone moves
         let lineElements = []; // Array to hold all drawn lines
         let isDrawing = false; // To check if the user is dragging
         let isPathStarted = false; // Флаг для отслеживания, начат ли путь
@@ -225,7 +226,7 @@
 
         function startTimer() {
 
-            let timeRemaining = 60; // Устанавливаем 2 минуты (120 секунд)
+            let timeRemaining = 120; // Устанавливаем 2 минуты (120 секунд)
             const timerElement = document.getElementById('timer');
 
             timerInterval = setInterval(() => {
@@ -525,14 +526,6 @@
                     console.log("Игра завершена неправильно"); // Отладочный вывод
                     showMessage("Ошибка: Вы должны завершить путь на числе 6!");
                 }
-            } else {
-                console.log("Не все ячейки выбраны"); // Отладочный вывод
-                const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
-                if (lastValue === 6) {
-                    showMessage("Игра не завершена: не все ячейки заполнены!");
-                } else {
-                    showMessage("Игра еще не завершена. Продолжайте рисовать путь!");
-                }
             }
         }
 
@@ -607,7 +600,7 @@
 
                 // Рисуем линию между последней и текущей ячейкой
                 drawLine(lastCell, cell);
-            } 
+            }
             // Если пользователь двигается назад
             else if (currentPath.length > 1 && currentPath[currentPath.length - 2] === cell) {
                 // Удаляем последнюю линию
@@ -780,38 +773,61 @@
 
         function showMessage(message) {
             console.log("showMessage вызвана с сообщением:", message); // Отладочный вывод
-            const messageBox = document.getElementById('messageBox');
-            const messageText = document.getElementById('messageText');
+            const messageContainer = document.getElementById('messageContainer');
 
-            if (!messageBox || !messageText) {
-                console.error("Элементы messageBox или messageText не найдены");
+            if (!messageContainer) {
+                console.error("Контейнер для сообщений не найден");
                 return;
             }
 
-            // Устанавливаем текст сообщения
+            // Создаем новое сообщение
+            const messageBox = document.createElement('div');
+            messageBox.classList.add('message-box');
+
+            // Создаем текст сообщения
+            const messageText = document.createElement('span');
             messageText.textContent = message;
 
-            // Сбрасываем фон плашки на стандартный (белый)
-            messageBox.style.backgroundColor = "white"; // Белый фон
-            messageBox.style.color = "black"; // Черный текст
+            // Создаем кнопку "крестик" для закрытия сообщения
+            const closeButton = document.createElement('button');
+            closeButton.classList.add('close-button');
+            closeButton.textContent = '×';
+            closeButton.onclick = () => {
+                messageBox.style.transform = 'translateX(5px)'; // Двигаем вправо
+                messageBox.style.opacity = '0'; // Уменьшаем прозрачность
+                setTimeout(() => {
+                    messageBox.remove(); // Удаляем сообщение из DOM
+                }, 300); // Учитываем время анимации
+            };
 
-            // Показываем плашку
-            messageBox.style.display = "block";
-            messageBox.style.opacity = "1";
+            // Добавляем текст и кнопку в сообщение
+            messageBox.appendChild(messageText);
+            messageBox.appendChild(closeButton);
 
-            // Автоматическое скрытие через 10 секунд
+            // Добавляем сообщение в контейнер
+            messageContainer.appendChild(messageBox);
+
+            // Показываем сообщение с анимацией
             setTimeout(() => {
-                hideMessage();
-            }, 10000); // 10 секунд
+                messageBox.style.opacity = '1';
+            }, 100);
+
+            // Удаляем сообщение через заданное время с анимацией исчезновения
+            setTimeout(() => {
+                if (messageBox.parentElement) { // Проверяем, что сообщение еще существует
+                    messageBox.style.transform = 'translateX(5px)'; // Двигаем вправо
+                    messageBox.style.opacity = '0'; // Уменьшаем прозрачность
+                    setTimeout(() => {
+                        messageBox.remove(); // Удаляем сообщение из DOM
+                    }, 300); // Учитываем время анимации
+                }
+            }, MESSAGE_DISPLAY_TIME); // Используем глобальную переменную
         }
 
-        function hideMessage() {
-            const messageBox = document.getElementById('messageBox');
-            messageBox.style.opacity = '0';
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 300); // Учитываем время перехода
-        }
+
+        // showMessage("Это тестовое сообщение.");
+        // showMessage("Еще одно сообщение с более длинным текстом.");
     </script>
 </body>
+
 </html>

@@ -526,6 +526,45 @@
                     console.log("Игра завершена неправильно"); // Отладочный вывод
                     showMessage("Ошибка: Вы должны завершить путь на числе 6!");
                 }
+            } else {
+                const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
+                let allNumbersConnected = true;
+                let allEmptyCellsConnected = true;
+
+                if (lastValue) {
+                    // Проверяем, что все числа от 1 до последнего числа выбраны
+                    for (let i = 1; i <= lastValue; i++) {
+                        const cell = findCellByValue(i);
+                        if (!cell || !cell.classList.contains('selected')) {
+                            console.log(`Число ${i} не выбрано`); // Отладочный вывод
+                            allNumbersConnected = false;
+                        }
+                    }
+
+                    // Проверяем, что все пустые ячейки были захвачены
+                    allCells.forEach(cell => {
+                        if (!cell.dataset.value && !cell.classList.contains('selected')) {
+                            console.log("Пустая ячейка не захвачена"); // Отладочный вывод
+                            allEmptyCellsConnected = false;
+                        }
+                    });
+
+                    // Если числа или пустые ячейки не захвачены, выводим сообщение
+                    if (!allNumbersConnected || !allEmptyCellsConnected) {
+                        showMessage("Путь проложен неправильно, свяжите все числа, либо заполните все ячейки!");
+                        return;
+                    }
+
+                    // Проверяем, что путь не продолжается после последнего числа
+                    if (lastValue === 6 && currentPath.length > 6) {
+                        const nextCell = currentPath[currentPath.length - 1];
+                        if (nextCell) {
+                            console.log("Путь продолжается после последнего числа"); // Отладочный вывод
+                            showMessage("Путь проложен неправильно, свяжите все числа, либо заполните все ячейки!");
+                            return;
+                        }
+                    }
+                }
             }
         }
 
