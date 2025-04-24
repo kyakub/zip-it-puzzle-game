@@ -526,14 +526,6 @@
                     console.log("Игра завершена неправильно"); // Отладочный вывод
                     showMessage("Ошибка: Вы должны завершить путь на числе 6!");
                 }
-            } else {
-                console.log("Не все ячейки выбраны"); // Отладочный вывод
-                const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
-                if (lastValue === 6) {
-                    showMessage("Игра не завершена: не все ячейки заполнены!");
-                } else {
-                    showMessage("Игра еще не завершена. Продолжайте рисовать путь!");
-                }
             }
         }
 
