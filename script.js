@@ -1,11 +1,21 @@
 // Global variables
-const MESSAGE_DISPLAY_TIME = 10000; // Message display time in milliseconds (10 seconds)
-const gridSize = 5;
 const puzzleGrid = document.getElementById('puzzleGrid');
-let currentPuzzle = [];
+const msgDisplayTime = 5000; // Message display time in milliseconds (10 seconds)
+const gridSize = 5; // Size of the grid (5x5)
+let xCells = 5; // Number of cells to be filled with numbers
+let currentPuzzle = []; // Array to hold the current puzzle
 let lineElements = []; // Array to hold all drawn lines
 let isDrawing = false; // To check if the user is dragging
 let isPathStarted = false; // Flag to track if the path has started
+
+// Connection matrix for valid connections
+const connectionMatrix = {
+    1: [2], 2: [3], 3: [4], 4: [5], 5: [6], 6: [7], 7: [8], 8: [9], 9: [10], 10: []
+};
+
+function isValidConnection(fromValue, toValue) {
+    return connectionMatrix[fromValue].includes(toValue);
+}
 
 // Add timer in JavaScript
 let timerInterval;
@@ -21,7 +31,8 @@ function startTimer() {
 
         if (timeRemaining <= 0) {
             clearInterval(timerInterval);
-            showGameOverMessage(); // Show game over message
+            // showGameOverMessage(); // Show game over message
+            showMessage("Time is up! You lost.");
         }
 
         timeRemaining--;
@@ -95,8 +106,8 @@ function initializePuzzle() {
     // Clear the grid
     puzzleGrid.innerHTML = '';
 
-    // Create an array of numbers 1-6 and empty blocks
-    let numbers = Array.from({ length: gridSize * gridSize }, (_, i) => (i < 6 ? i + 1 : null));
+    // Create an array of numbers 1-xCells and empty blocks
+    let numbers = Array.from({ length: gridSize * gridSize }, (_, i) => (i < xCells ? i + 1 : null));
     numbers = shuffle(numbers);
 
     // Check that numbers don't block the path
@@ -293,23 +304,23 @@ function drawPath(fromCell, toCell) {
 
 // Game completion check
 function checkGameCompletion() {
-    console.log("checkGameCompletion called"); // Debug output
+    console.trace("checkGameCompletion called"); // Debug output
     const allCells = document.querySelectorAll('.cell');
     const allSelected = Array.from(allCells).every(cell => cell.classList.contains('selected'));
 
     if (allSelected) {
-        console.log("All cells selected"); // Debug output
+        console.trace("All cells selected"); // Debug output
         const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
-        if (lastValue === 6) {
-            console.log("Game completed successfully"); // Debug output
+        if (lastValue === xCells) {
+            console.trace("Game completed successfully"); // Debug output
             showMessage("Congratulations! You successfully completed the game!");
             stopTimer();
             score += 1;
             updateScore();
             disableGameInteraction();
         } else {
-            console.log("Game completed incorrectly"); // Debug output
-            showMessage("Error: You must finish the path at number 6!");
+            console.trace("Game completed incorrectly"); // Debug output
+            showMessage("You must finish the path at number: " + xCells + "!");
         }
     } else {
         const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
@@ -321,7 +332,7 @@ function checkGameCompletion() {
             for (let i = 1; i <= lastValue; i++) {
                 const cell = findCellByValue(i);
                 if (!cell || !cell.classList.contains('selected')) {
-                    console.log(`Number ${i} is not selected`); // Debug output
+                    console.trace(`Number ${i} is not selected`); // Debug output
                     allNumbersConnected = false;
                 }
             }
@@ -329,7 +340,7 @@ function checkGameCompletion() {
             // Check if all empty cells have been captured
             allCells.forEach(cell => {
                 if (!cell.dataset.value && !cell.classList.contains('selected')) {
-                    console.log("Empty cell not captured"); // Debug output
+                    console.trace("Empty cell not captured"); // Debug output
                     allEmptyCellsConnected = false;
                 }
             });
@@ -341,10 +352,10 @@ function checkGameCompletion() {
             }
 
             // Check if the path continues after the last number
-            if (lastValue === 6 && currentPath.length > 6) {
+            if (lastValue === xCells && currentPath.length > xCells) {
                 const nextCell = currentPath[currentPath.length - 1];
                 if (nextCell) {
-                    console.log("Path continues after the last number"); // Debug output
+                    console.trace("Path continues after the last number"); // Debug output
                     showMessage("Link all numbers sequentially and fill all cells!");
                     return;
                 }
@@ -374,34 +385,16 @@ function handleMouseDown(e) {
         return;
     }
 
-    console.log("handleMouseDown called for cell:", cell.dataset.value); // Debug output
+    console.trace("handleMouseDown called for cell:", cell.dataset.value); // Debug output
 
     isDrawing = true;
 
     // If the cell is not selected yet, add it to the path
     if (!currentPath.includes(cell)) {
         currentPath.push(cell);
-        console.log("currentPath updated:", currentPath.map(c => c.dataset.value)); // Debug output
+        console.trace("currentPath updated:", currentPath.map(c => c.dataset.value)); // Debug output
         cell.classList.add('selected');
     }
-}
-
-// Connection matrix for valid connections
-const connectionMatrix = {
-    1: [2],
-    2: [3],
-    3: [4],
-    4: [5],
-    5: [6],
-    6: [7],
-    7: [8],
-    8: [9],
-    9: [10],
-    10: []
-};
-
-function isValidConnection(fromValue, toValue) {
-    return connectionMatrix[fromValue].includes(toValue);
 }
 
 // Updated handler for drawing line while moving the mouse
@@ -506,84 +499,6 @@ window.onload = () => {
     loadProgress(); // Load game progress
 };
 
-let tempLine = null; // Temporary line for real-time display
-
-function createTempLine() {
-    if (!tempLine) {
-        tempLine = document.createElement('div');
-        tempLine.classList.add('line', 'temp'); // Add a temporary line class
-        puzzleGrid.appendChild(tempLine);
-    }
-}
-
-function updateTempLine(fromCell, toCell) {
-    createTempLine(); // Ensure the temporary line is created
-    const fromRect = fromCell.getBoundingClientRect();
-    const toRect = toCell.getBoundingClientRect();
-    const gridRect = puzzleGrid.getBoundingClientRect();
-
-    const x1 = fromRect.left + fromRect.width / 2 - gridRect.left;
-    const y1 = fromRect.top + fromRect.height / 2 - gridRect.top;
-    const x2 = toRect.left + toRect.width / 2 - gridRect.left;
-    const y2 = toRect.top + toRect.height / 2 - gridRect.top;
-
-    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-
-    tempLine.style.width = `${length}px`;
-    tempLine.style.height = `10px`; // Line thickness
-    tempLine.style.position = 'absolute';
-    tempLine.style.backgroundColor = 'rgba(0, 0, 255, 0.5)'; // Blue color for temporary line
-    tempLine.style.transformOrigin = '0 50%';
-    tempLine.style.transform = `rotate(${angle}deg)`;
-    tempLine.style.left = `${x1}px`;
-    tempLine.style.top = `${y1 - 5}px`;
-}
-
-function removeTempLine() {
-    if (tempLine) {
-        tempLine.remove();
-        tempLine = null;
-    }
-}
-
-function showGameOverMessage() {
-    const messageBox = document.getElementById('messageBox');
-    const messageText = document.getElementById('messageText');
-
-    if (!messageBox || !messageText) {
-        console.error("MessageBox or MessageText elements not found");
-        return;
-    }
-
-    // Set message text
-    messageText.textContent = "Time is up! You lost.";
-
-    // Change background to red
-    messageBox.style.backgroundColor = "#ffcccc"; // Red background
-    messageBox.style.color = "red"; // Red text
-
-    // Show the message box
-    messageBox.style.display = "block";
-    messageBox.style.opacity = "1";
-
-    // Disable game interaction
-    disableGameInteraction();
-
-    // Auto-hide after 10 seconds
-    setTimeout(() => {
-        hideMessage();
-    }, 10000); // 10 seconds
-}
-
-function showSuccessMessage() {
-    showMessage("Congratulations! You successfully completed the game!");
-    stopTimer();
-    score += 1;
-    updateScore();
-    disableGameInteraction();
-}
-
 function disableGameInteraction() {
     const allCells = document.querySelectorAll('.cell');
     if (allCells.length === 0) return; // Check if there are any cells in the grid
@@ -596,7 +511,7 @@ function disableGameInteraction() {
 }
 
 function showMessage(message) {
-    console.log("showMessage called with message:", message); // Debug output
+    console.warn("Message:", message); // Debug output
     const messageContainer = document.getElementById('messageContainer');
 
     if (!messageContainer) {
@@ -645,5 +560,5 @@ function showMessage(message) {
                 messageBox.remove(); // Remove message from DOM
             }, 300); // Account for animation time
         }
-    }, MESSAGE_DISPLAY_TIME); // Use global variable
+    }, msgDisplayTime); // Use global variable
 }

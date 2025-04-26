@@ -15,8 +15,22 @@ body {
     flex-direction: column;
 }
 
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 800px;
+    padding: 20px;
+}
+
 h1 {
     margin-bottom: 20px;
+}
+
+.content .text {
+    font-size: 20px;
 }
 
 .game-container {
@@ -25,16 +39,11 @@ h1 {
     align-items: center;
 }
 
-.instructions {
-    margin-bottom: 20px;
-    text-align: center;
-}
-
 .puzzle-grid {
     display: grid;
     grid-template-columns: repeat(5, 60px);
     grid-template-rows: repeat(5, 60px);
-    gap: 2px;
+    gap: 1px;
     margin-bottom: 20px;
     position: relative;
 }
@@ -50,13 +59,30 @@ h1 {
     align-items: center;
     position: relative;
     cursor: pointer;
-    border-radius: 5px;
     user-select: none;
 }
 
 .cell.selected {
-    background-color: #3498db;
+    background-color: #000;
+}
+
+.cell span {
+    z-index: 2;
+    background-color: #000;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: bold;
     color: #fff;
+}
+
+.cell.selected span {
+    background-color: #fff;
+    color: #000;
 }
 
 .buttons {
@@ -83,32 +109,16 @@ button:hover {
 
 .line {
     position: absolute;
-    background-color: rgba(0, 255, 0, 0.7);
+    background-color: #fff;
     z-index: 1;
     height: 10px;
-    border-radius: 5px;
+    border-radius: 4px;
     pointer-events: none;
-    transition: width 0.1s ease, transform 0.1s ease;
-}
-
-.line.temp {
-    background-color: rgba(0, 0, 255, 0.5);
+    transition: width 0.3s ease, transform 0.3s ease;
 }
 
 button:focus {
     outline: none;
-}
-
-.error-message {
-    background-color: #ffcccc;
-    color: red;
-    padding: 10px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    width: 300px;
-    text-align: center;
-    display: none;
-    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .message-box {
