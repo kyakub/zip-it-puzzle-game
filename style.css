@@ -25,8 +25,23 @@ body {
     padding: 20px;
 }
 
-h1 {
+.logo {
+    display: flex;
+    width: 100%;
+    height: auto;
     margin-bottom: 20px;
+    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.logo img {
+    width: 50px;
+    height: auto;
+}
+
+h1 {
+    margin-left: 10px;
 }
 
 .content .text {
