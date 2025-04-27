@@ -41,17 +41,16 @@ h1 {
 
 .puzzle-grid {
     display: grid;
-    grid-template-columns: repeat(5, 60px);
-    grid-template-rows: repeat(5, 60px);
-    gap: 1px;
+    gap: 0;
     margin-bottom: 20px;
     position: relative;
+    border: 1px solid #000;
 }
 
 .cell {
     width: 60px;
     height: 60px;
-    border: 2px solid #000;
+    border: 1px solid #000;
     text-align: center;
     font-size: 20px;
     display: flex;
@@ -63,7 +62,7 @@ h1 {
 }
 
 .cell.selected {
-    background-color: #000;
+    background-color: #ccc;
 }
 
 .cell span {
@@ -81,8 +80,24 @@ h1 {
 }
 
 .cell.selected span {
-    background-color: #fff;
-    color: #000;
+    background-color: #333;
+    color: #fff;
+}
+
+.line {
+    z-index: 1;
+    position: absolute;
+    pointer-events: none;
+}
+
+.line-content {
+    display: block;
+    width: 69px;
+    height: 10px;
+    background: #444;
+    margin: 0px 0px 0px -4px;
+    border-radius: 10px;
+    transition: width 0.3s ease, transform 0.3s ease;
 }
 
 .buttons {
@@ -105,16 +120,6 @@ button {
 button:hover {
     background-color: #000;
     color: white;
-}
-
-.line {
-    position: absolute;
-    background-color: #fff;
-    z-index: 1;
-    height: 10px;
-    border-radius: 4px;
-    pointer-events: none;
-    transition: width 0.3s ease, transform 0.3s ease;
 }
 
 button:focus {

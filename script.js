@@ -5,6 +5,7 @@ const gridSize = 5; // Size of the grid (5x5)
 let xCells = 5; // Number of cells to be filled with numbers
 let currentPuzzle = []; // Array to hold the current puzzle
 let lineElements = []; // Array to hold all drawn lines
+let lineContentElements = []; // Array to hold all drawn line corners
 let isDrawing = false; // To check if the user is dragging
 let isPathStarted = false; // Flag to track if the path has started
 
@@ -102,9 +103,14 @@ function initializePuzzle() {
     currentPuzzle = [];
     currentPath = [];
     lineElements = [];
+    lineContentElements = [];
 
     // Clear the grid
     puzzleGrid.innerHTML = '';
+
+    // Create the grid dynamically
+    puzzleGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`; // Set grid columns
+    puzzleGrid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`; // Set grid rows
 
     // Create an array of numbers 1-xCells and empty blocks
     let numbers = Array.from({ length: gridSize * gridSize }, (_, i) => (i < xCells ? i + 1 : null));
@@ -202,8 +208,13 @@ function drawLine(fromCell, toCell) {
     line.style.left = `${x1}px`;
     line.style.top = `${y1 - 5}px`;
 
-    puzzleGrid.appendChild(line);
-    lineElements.push(line);
+    const lineContent = document.createElement('div');
+    lineContent.classList.add('line-content');
+
+    puzzleGrid.appendChild(line); // Append the line to the grid
+    line.appendChild(lineContent); // Append the corner to the line
+    lineElements.push(line); // Store the line element for later removal
+    lineContentElements.push(lineContent); // Store the corner element for later removal
 }
 
 // Updated function to find the path between two cells
@@ -422,14 +433,23 @@ function handleMouseMove(e) {
     else if (currentPath.length > 1 && currentPath[currentPath.length - 2] === cell) {
         // Remove the last line
         const lastLine = lineElements.pop();
-        if (lastLine) {
+        const lastlineContent = lineContentElements.pop();
+
+        if (lastLine && lastlineContent) {
             lastLine.remove();
+            lastlineContent.remove();
         }
 
         // Unselect the last cell
         const lastCell = currentPath.pop();
         lastCell.classList.remove('selected');
     }
+}
+
+// Handler for finishing the line drawing
+function handleMouseUp() {
+    isDrawing = false;
+    checkGameCompletion(); // Check for game completion
 }
 
 // Check if the cells are neighbors
@@ -444,12 +464,6 @@ function isNeighbor(cell1, cell2) {
         (row1 === row2 && Math.abs(col1 - col2) === 1) || // Horizontal neighbor
         (col1 === col2 && Math.abs(row1 - row2) === 1)    // Vertical neighbor
     );
-}
-
-// Handler for finishing the line drawing
-function handleMouseUp() {
-    isDrawing = false;
-    checkGameCompletion(); // Check for game completion
 }
 
 // Find a cell by its value
@@ -471,8 +485,11 @@ document.getElementById('undoButton').addEventListener('click', () => {
         lastCell.classList.remove('selected'); // Unselect the cell
 
         const lastLine = lineElements.pop(); // Remove the last line
-        if (lastLine) {
-            lastLine.remove();
+        const lastlineContent = lineContentElements.pop(); // Remove the last line corner
+
+        if (lastLine && lastlineContent) {
+            lastLine.remove(); // Remove the line from the DOM
+            lastlineContent.remove(); // Remove the line corner from the DOM
         }
     } else {
         showMessage("Can't undo further!"); // Use a universal function
@@ -486,7 +503,9 @@ document.getElementById('restartButton').addEventListener('click', () => {
     startTimer(); // Start a new timer
     currentPath = [];
     lineElements.forEach(line => line.remove());
+    lineContentElements.forEach(corner => corner.remove());
     lineElements = [];
+    lineContentElements = [];
     isPathStarted = false; // Reset the path start flag
 });
 
@@ -510,8 +529,10 @@ function disableGameInteraction() {
     });
 }
 
+// Universal function to show messages
 function showMessage(message) {
     console.warn("Message:", message); // Debug output
+
     const messageContainer = document.getElementById('messageContainer');
 
     if (!messageContainer) {
@@ -560,5 +581,5 @@ function showMessage(message) {
                 messageBox.remove(); // Remove message from DOM
             }, 300); // Account for animation time
         }
-    }, msgDisplayTime); // Use global variable
+    }, msgDisplayTime); // Use global variable for message display time
 }
