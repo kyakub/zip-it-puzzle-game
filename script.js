@@ -1,585 +1,505 @@
-// Global variables
-const puzzleGrid = document.getElementById('puzzleGrid');
-const msgDisplayTime = 5000; // Message display time in milliseconds (10 seconds)
-const gridSize = 5; // Size of the grid (5x5)
-let xCells = 5; // Number of cells to be filled with numbers
-let currentPuzzle = []; // Array to hold the current puzzle
-let lineElements = []; // Array to hold all drawn lines
-let lineContentElements = []; // Array to hold all drawn line corners
-let isDrawing = false; // To check if the user is dragging
-let isPathStarted = false; // Flag to track if the path has started
-
-// Connection matrix for valid connections
-const connectionMatrix = {
-    1: [2], 2: [3], 3: [4], 4: [5], 5: [6], 6: [7], 7: [8], 8: [9], 9: [10], 10: []
-};
-
-function isValidConnection(fromValue, toValue) {
-    return connectionMatrix[fromValue].includes(toValue);
-}
-
-// Add timer in JavaScript
-let timerInterval;
-
-function startTimer() {
-    let timeRemaining = 120; // Set 2 minutes (120 seconds)
+document.addEventListener('DOMContentLoaded', () => {
+    // --- DOM Elements ---
+    const puzzleGridElement = document.getElementById('puzzleGrid');
     const timerElement = document.getElementById('timer');
-
-    timerInterval = setInterval(() => {
-        const minutes = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
-        const seconds = String(timeRemaining % 60).padStart(2, '0');
-        timerElement.textContent = `Time: ${minutes}:${seconds}`;
-
-        if (timeRemaining <= 0) {
-            clearInterval(timerInterval);
-            // showGameOverMessage(); // Show game over message
-            showMessage("Time is up! You lost.");
-        }
-
-        timeRemaining--;
-    }, 1000);
-}
-
-function stopTimer() {
-    clearInterval(timerInterval);
-}
-
-// Add score counting
-let score = 0;
-
-function updateScore() {
     const scoreElement = document.getElementById('score');
-    scoreElement.textContent = `Score: ${score}`;
-    localStorage.setItem('currentScore', score); // Save score in local storage
-}
+    const levelDisplayElement = document.getElementById('levelDisplay');
+    const undoButton = document.getElementById('undoButton');
+    const resetLevelButton = document.getElementById('resetLevelButton');
+    const restartGameButton = document.getElementById('restartGameButton');
+    const nextLevelButton = document.getElementById('nextLevelButton');
+    const messageContainer = document.getElementById('messageContainer');
 
-function loadScore() {
-    const savedScore = localStorage.getItem('currentScore');
-    if (savedScore !== null) {
-        score = parseInt(savedScore, 10); // Load saved score
-        updateScore(); // Update score display on the page
-    }
-}
+    // --- Audio Elements ---
+    const soundTick = document.getElementById('soundTick');
+    const soundError = document.getElementById('soundError');
+    const soundWin = document.getElementById('soundWin');
+    const soundLose = document.getElementById('soundLose');
 
-// Add sounds
-const correctSound = new Audio('correct.mp3');
-const errorSound = new Audio('error.mp3');
+    // --- Game Configuration ---
+    const MSG_DISPLAY_TIME = 5000; // milliseconds
+    const BASE_TIME_LIMIT = 120; // seconds for level 1
+    const CELL_SIZE = 60; // pixels
 
-function playCorrectSound() {
-    correctSound.play();
-}
+    // --- Game State Object ---
+    const game = {
+        level: 1, // Default level
+        gridSize: 5,
+        xCells: 5,
+        timeLimit: BASE_TIME_LIMIT,
+        score: 0,
+        currentPuzzle: [],
+        currentPath: [],
+        drawnLines: [],
+        timerInterval: null,
+        timeRemaining: 0,
+        isDrawing: false,
+        isGameOver: false,
+        expectedNextValue: 1,
 
-function playErrorSound() {
-    errorSound.play();
-}
+        // --- Methods ---
 
-// Save progress
-function saveProgress() {
-    const progress = {
-        currentPuzzle,
-        currentPath,
-        timeElapsed,
-        score,
-    };
-    localStorage.setItem('zipPuzzleProgress', JSON.stringify(progress));
-}
+        init() {
+            this.loadScore(); // Load saved score
+            this.loadLevel(); // Load saved level
+            this.startLevel(); // Start at the loaded (or default) level
+            this.addEventListeners();
+        },
 
-// Load progress
-function loadProgress() {
-    const savedProgress = localStorage.getItem('zipPuzzleProgress');
-    if (savedProgress) {
-        const { currentPuzzle: savedPuzzle, currentPath: savedPath, timeElapsed: savedTime, score: savedScore } = JSON.parse(savedProgress);
-        currentPuzzle = savedPuzzle;
-        currentPath = savedPath;
-        timeElapsed = savedTime;
-        score = savedScore;
-        initializePuzzle();
-        startTimer();
-    }
-}
+        startLevel() {
+            this.isGameOver = false;
+            this.isDrawing = false;
+            this.currentPath = [];
+            this.drawnLines.forEach(line => line.remove());
+            this.drawnLines = [];
+            this.expectedNextValue = 1;
 
-// Initialize the grid with numbers and check their placement
-function initializePuzzle() {
-    currentPuzzle = [];
-    currentPath = [];
-    lineElements = [];
-    lineContentElements = [];
+            // --- UPDATED Level Progression Calculation ---
 
-    // Clear the grid
-    puzzleGrid.innerHTML = '';
+            // Grid Size: Starts at 5, increases by 1 every 15 levels, max 7
+            const gridSizeIncrease = Math.floor((this.level - 1) / 15);
+            this.gridSize = Math.min(7, 5 + gridSizeIncrease); // Cap at 7x7
 
-    // Create the grid dynamically
-    puzzleGrid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`; // Set grid columns
-    puzzleGrid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`; // Set grid rows
+            // Numbered Cells (xCells): Starts at 5, increases by 1 every 10 levels, max 13
+            const xCellsIncrease = Math.floor((this.level - 1) / 10);
+            this.xCells = Math.min(13, 5 + xCellsIncrease); // Cap at 13
 
-    // Create an array of numbers 1-xCells and empty blocks
-    let numbers = Array.from({ length: gridSize * gridSize }, (_, i) => (i < xCells ? i + 1 : null));
-    numbers = shuffle(numbers);
+            // Time limit progression (can keep this or adjust if needed)
+            this.timeLimit = BASE_TIME_LIMIT + (this.level - 1) * 10;
 
-    // Check that numbers don't block the path
-    while (!isValidNumberPlacement(numbers)) {
-        numbers = shuffle(numbers);
-    }
+            // Log the calculated difficulty for debugging/verification
+            console.log(`Starting Level ${this.level}: Grid ${this.gridSize}x${this.gridSize}, Numbers ${this.xCells}, Time ${this.timeLimit}s`);
 
-    // Create the grid
-    for (let i = 0; i < gridSize; i++) {
-        let row = [];
-        for (let j = 0; j < gridSize; j++) {
-            const cell = document.createElement('div');
-            cell.classList.add('cell');
-            cell.dataset.row = i;
-            cell.dataset.col = j;
-            cell.dataset.value = numbers[i * gridSize + j];
+            this.updateUI();
+            this.generatePuzzle();
+            this.startTimer();
+            nextLevelButton.style.display = 'none';
+            this.enableInput();
+        },
 
-            if (numbers[i * gridSize + j] !== null) {
-                const numberElement = document.createElement('span');
-                numberElement.textContent = numbers[i * gridSize + j];
-                cell.appendChild(numberElement);
+        updateUI() {
+            levelDisplayElement.textContent = `Level: ${this.level}`;
+            scoreElement.textContent = `Score: ${this.score}`;
+            this.updateTimerDisplay();
+        },
+
+        generatePuzzle() {
+            this.currentPuzzle = [];
+            puzzleGridElement.innerHTML = '';
+
+            puzzleGridElement.style.gridTemplateColumns = `repeat(${this.gridSize}, ${CELL_SIZE}px)`;
+            puzzleGridElement.style.gridTemplateRows = `repeat(${this.gridSize}, ${CELL_SIZE}px)`;
+
+            let numbersToPlace = Array.from({ length: this.xCells }, (_, i) => i + 1);
+            let totalCells = this.gridSize * this.gridSize;
+            let gridValues = new Array(totalCells).fill(null);
+
+            let numberIndices = this.shuffle(Array.from({ length: totalCells }, (_, i) => i));
+            for (let i = 0; i < this.xCells; i++) {
+                gridValues[numberIndices[i]] = numbersToPlace[i];
             }
 
-            cell.addEventListener('mousedown', handleMouseDown);
-            cell.addEventListener('mousemove', handleMouseMove);
-            cell.addEventListener('mouseup', handleMouseUp);
-            row.push(cell);
-            puzzleGrid.appendChild(cell);
-        }
-        currentPuzzle.push(row);
-    }
-}
+            for (let r = 0; r < this.gridSize; r++) {
+                let row = [];
+                for (let c = 0; c < this.gridSize; c++) {
+                    const cell = document.createElement('div');
+                    const value = gridValues[r * this.gridSize + c];
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.dataset.value = value !== null ? value : '';
+                    cell.style.width = `${CELL_SIZE}px`;
+                    cell.style.height = `${CELL_SIZE}px`;
 
-// Check that numbers do not block the path
-function isValidNumberPlacement(numbers) {
-    const grid = [];
-    for (let i = 0; i < gridSize; i++) {
-        grid.push(numbers.slice(i * gridSize, (i + 1) * gridSize));
-    }
+                    if (value !== null) {
+                        const numberElement = document.createElement('span');
+                        numberElement.textContent = value;
+                        cell.appendChild(numberElement);
+                    }
 
-    for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-            if (grid[i][j] !== null) {
-                const neighbors = [
-                    [i - 1, j], // up
-                    [i + 1, j], // down
-                    [i, j - 1], // left
-                    [i, j + 1], // right
-                ];
-                for (const [ni, nj] of neighbors) {
-                    if (ni >= 0 && ni < gridSize && nj >= 0 && nj < gridSize) {
-                        const neighborValue = grid[ni][nj];
-                        if (neighborValue !== null && Math.abs(neighborValue - grid[i][j]) === 1) {
-                            return false; // Numbers are next to each other
+                    cell.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                    row.push(cell);
+                    puzzleGridElement.appendChild(cell);
+                }
+                this.currentPuzzle.push(row);
+            }
+             this.currentPuzzle.flat().forEach(cell => {
+                 cell.addEventListener('mousedown', this.handleMouseDown.bind(this));
+            });
+        },
+
+        shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        },
+
+        // --- Event Handlers ---
+        handleMouseDown(e) {
+            if (this.isGameOver || this.isDrawing) return;
+
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+
+            const value = parseInt(cell.dataset.value) || null;
+            const isPathEmpty = this.currentPath.length === 0;
+            const lastPathStep = isPathEmpty ? null : this.currentPath[this.currentPath.length - 1];
+
+            if (isPathEmpty) {
+                if (value === 1) {
+                    this.isDrawing = true;
+                    cell.classList.add('selected');
+                    this.currentPath.push({ cell: cell, expectedValueBeforeEntering: 1 });
+                    this.expectedNextValue = 2;
+                    this.playSound(soundTick);
+                    console.log("Path started:", this.getPathValues());
+                } else {
+                    this.showMessage("Path must start on number 1!");
+                    this.playSound(soundError);
+                }
+            }
+            else if (!isPathEmpty && cell === lastPathStep.cell) {
+                 this.isDrawing = true;
+                 console.log("Resuming draw from cell:", value ?? 'Empty');
+            }
+             else {
+                 console.log("Click ignored: Not the start (1) or the last cell of the existing path.");
+             }
+        },
+
+        handleMouseMove(e) {
+            if (!this.isDrawing || this.isGameOver) return;
+
+            const gridRect = puzzleGridElement.getBoundingClientRect();
+            const mouseX = e.clientX - gridRect.left;
+            const mouseY = e.clientY - gridRect.top;
+            const col = Math.floor(mouseX / CELL_SIZE);
+            const row = Math.floor(mouseY / CELL_SIZE);
+
+            if (row < 0 || row >= this.gridSize || col < 0 || col >= this.gridSize) return;
+
+            const currentCell = this.currentPuzzle[row]?.[col];
+            if (!currentCell) return;
+
+            const lastPathStep = this.currentPath.length > 0 ? this.currentPath[this.currentPath.length - 1] : null;
+            const lastCell = lastPathStep?.cell;
+
+            if (!lastCell || currentCell === lastCell) return;
+
+            if (this.currentPath.length > 1 && currentCell === this.currentPath[this.currentPath.length - 2].cell) {
+                this.undoLastStep(true);
+                console.log("Undo during drag:", this.getPathValues());
+            }
+            else if (!currentCell.classList.contains('selected') && this.isNeighbor(lastCell, currentCell)) {
+                const currentValue = parseInt(currentCell.dataset.value) || null;
+
+                let isValidMove = false;
+                let isMovingToExpectedNumber = false;
+
+                if (currentValue === this.expectedNextValue) {
+                    isValidMove = true;
+                    isMovingToExpectedNumber = true;
+                } else if (currentValue === null) {
+                    isValidMove = true;
+                }
+
+                if (isValidMove) {
+                    const previousExpectedValue = this.expectedNextValue;
+                    currentCell.classList.add('selected');
+                    this.drawLine(lastCell, currentCell);
+                    this.currentPath.push({ cell: currentCell, expectedValueBeforeEntering: previousExpectedValue });
+                    this.playSound(soundTick);
+
+                    if (isMovingToExpectedNumber) {
+                        this.expectedNextValue++;
+                        console.log("Path extended to number:", currentValue, " New expected:", this.expectedNextValue, " Path:", this.getPathValues());
+                        if (currentValue === this.xCells) {
+                             this.checkWinCondition();
                         }
+                    } else {
+                        console.log("Path extended to empty cell. Expected:", this.expectedNextValue, " Path:", this.getPathValues());
+                    }
+                } else {
+                     console.log("Invalid move attempt to:", currentValue, "Expected:", this.expectedNextValue);
+                }
+            }
+        },
+
+        handleMouseUp() {
+            if (this.isDrawing) {
+                 this.isDrawing = false;
+                 console.log("Mouse up, drawing stopped. Final path:", this.getPathValues());
+                 this.checkWinCondition();
+            }
+        },
+
+        handleUndo() {
+            if (this.currentPath.length > 1 && !this.isGameOver && !this.isDrawing) {
+                this.undoLastStep(false);
+                console.log("Undo button pressed:", this.getPathValues());
+            } else if (this.isDrawing) {
+                 this.showMessage("Cannot undo while drawing.");
+            } else if (!this.isGameOver && this.currentPath.length <= 1) {
+                 this.showMessage("Cannot undo further.");
+            }
+        },
+
+        handleResetLevel() {
+             if (this.isGameOver && this.currentPath.length < this.gridSize * this.gridSize) {
+             } else if (this.isGameOver) {
+                  this.showMessage("Level complete. Use 'Next Level' or 'Restart Game'.");
+                  return;
+             }
+             console.log(`Resetting Level ${this.level}`);
+             this.stopTimer();
+             this.startLevel(); // Re-run setup for the current level (keeps score/level)
+             this.showMessage(`Level ${this.level} Reset!`);
+        },
+
+        handleRestartGame() {
+             console.log("Restarting Game");
+             this.stopTimer();
+             this.level = 1; // Back to level 1
+             this.score = 0; // Reset score
+             this.saveScore(); // Save the reset score
+             this.saveLevel(); // Save the reset level (level 1)
+             this.startLevel(); // Start level 1 setup
+             this.showMessage("Game Restarted!");
+        },
+
+        handleNextLevel() {
+            if (!this.isGameOver || this.currentPath.length < this.gridSize * this.gridSize) return;
+            this.level++;
+            this.saveLevel(); // Save the new level number
+            this.startLevel(); // Start the next level setup
+        },
+
+        // --- Game Logic Helpers ---
+        isNeighbor(cell1, cell2) {
+            if (!cell1 || !cell2) return false;
+            const r1 = parseInt(cell1.dataset.row);
+            const c1 = parseInt(cell1.dataset.col);
+            const r2 = parseInt(cell2.dataset.row);
+            const c2 = parseInt(cell2.dataset.col);
+            return Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1;
+        },
+
+        drawLine(fromCell, toCell) {
+            const gridRect = puzzleGridElement.getBoundingClientRect();
+            const fromRect = fromCell.getBoundingClientRect();
+            const toRect = toCell.getBoundingClientRect();
+
+            const x1 = fromRect.left + fromRect.width / 2 - gridRect.left;
+            const y1 = fromRect.top + fromRect.height / 2 - gridRect.top;
+            const x2 = toRect.left + toRect.width / 2 - gridRect.left;
+            const y2 = toRect.top + toRect.height / 2 - gridRect.top;
+
+            const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+            const line = document.createElement('div');
+            line.classList.add('line');
+            line.style.width = `${length}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1 - 5}px`;
+
+            puzzleGridElement.appendChild(line);
+            this.drawnLines.push(line);
+        },
+
+        undoLastStep(isDuringDrag) {
+            if (this.currentPath.length <= 1) return;
+
+            const removedStep = this.currentPath.pop();
+            removedStep.cell.classList.remove('selected');
+
+            const lastLine = this.drawnLines.pop();
+            if (lastLine) lastLine.remove();
+
+            this.expectedNextValue = removedStep.expectedValueBeforeEntering;
+
+            if (!isDuringDrag) this.playSound(soundTick);
+        },
+
+
+        checkWinCondition() {
+            if (this.isGameOver) return;
+
+            const totalCellsInGrid = this.gridSize * this.gridSize;
+            const pathLength = this.currentPath.length;
+            const pathCoversAllCells = pathLength === totalCellsInGrid;
+
+            const pathEndsOnCorrectNumberOrLater = this.expectedNextValue > this.xCells;
+
+            let allNumbersPresent = false;
+            if (pathEndsOnCorrectNumberOrLater) {
+                 const pathValues = new Set(
+                     this.currentPath.map(step => parseInt(step.cell.dataset.value)).filter(v => !isNaN(v))
+                 );
+                 allNumbersPresent = true;
+                 for (let i = 1; i <= this.xCells; i++) {
+                    if (!pathValues.has(i)) {
+                        allNumbersPresent = false;
+                        break;
                     }
                 }
             }
-        }
-    }
-    return true;
-}
 
-// Shuffle array for random number placement
-function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-}
-
-// Function to draw a line between two cells
-function drawLine(fromCell, toCell) {
-    const fromRect = fromCell.getBoundingClientRect();
-    const toRect = toCell.getBoundingClientRect();
-    const gridRect = puzzleGrid.getBoundingClientRect();
-
-    const x1 = fromRect.left + fromRect.width / 2 - gridRect.left;
-    const y1 = fromRect.top + fromRect.height / 2 - gridRect.top;
-    const x2 = toRect.left + toRect.width / 2 - gridRect.left;
-    const y2 = toRect.top + toRect.height / 2 - gridRect.top;
-
-    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-
-    const line = document.createElement('div');
-    line.classList.add('line');
-    line.style.width = `${length}px`;
-    line.style.transformOrigin = '0 50%';
-    line.style.transform = `rotate(${angle}deg)`;
-    line.style.left = `${x1}px`;
-    line.style.top = `${y1 - 5}px`;
-
-    const lineContent = document.createElement('div');
-    lineContent.classList.add('line-content');
-
-    puzzleGrid.appendChild(line); // Append the line to the grid
-    line.appendChild(lineContent); // Append the corner to the line
-    lineElements.push(line); // Store the line element for later removal
-    lineContentElements.push(lineContent); // Store the corner element for later removal
-}
-
-// Updated function to find the path between two cells
-function findPath(fromCell, toCell) {
-    const start = { row: parseInt(fromCell.dataset.row), col: parseInt(fromCell.dataset.col) };
-    const end = { row: parseInt(toCell.dataset.row), col: parseInt(toCell.dataset.col) };
-
-    const queue = [start];
-    const visited = new Set();
-    const cameFrom = {};
-
-    visited.add(`${start.row},${start.col}`);
-
-    while (queue.length > 0) {
-        const current = queue.shift();
-        const key = `${current.row},${current.col}`;
-
-        if (current.row === end.row && current.col === end.col) {
-            // Build the path
-            const path = [];
-            let step = key;
-            while (step) {
-                const [row, col] = step.split(',').map(Number);
-                path.unshift({ row, col });
-                step = cameFrom[step];
+            if (pathCoversAllCells && pathEndsOnCorrectNumberOrLater && allNumbersPresent) {
+                this.isGameOver = true;
+                this.stopTimer();
+                this.score += this.level * 10 + Math.max(0, this.timeRemaining);
+                this.saveScore(); // Save score after winning
+                // Level is saved when 'Next Level' is clicked (or game restarted)
+                this.updateUI();
+                this.showMessage(`Level ${this.level} Complete! Score: ${this.score}`);
+                this.playSound(soundWin);
+                this.disableInput();
+                nextLevelButton.style.display = 'inline-block';
+                console.log("Game Won!");
             }
-            return path;
-        }
-
-        // Check neighbors
-        const neighbors = [
-            { row: current.row - 1, col: current.col }, // up
-            { row: current.row + 1, col: current.col }, // down
-            { row: current.row, col: current.col - 1 }, // left
-            { row: current.row, col: current.col + 1 }, // right
-        ];
-
-        for (const neighbor of neighbors) {
-            const neighborKey = `${neighbor.row},${neighbor.col}`;
-            if (
-                neighbor.row >= 0 &&
-                neighbor.row < gridSize &&
-                neighbor.col >= 0 &&
-                neighbor.col < gridSize &&
-                !visited.has(neighborKey)
-            ) {
-                const neighborCell = currentPuzzle[neighbor.row][neighbor.col];
-                const neighborValue = parseInt(neighborCell.dataset.value);
-
-                // Ignore blocks with numbers that do not match the sequence
-                if (
-                    neighborValue === null || // Empty block
-                    isNaN(neighborValue) || // Empty block
-                    neighborValue === parseInt(toCell.dataset.value) // Block with a number that matches the sequence
-                ) {
-                    visited.add(neighborKey);
-                    cameFrom[neighborKey] = key;
-                    queue.push(neighbor);
-                }
+            else if (this.expectedNextValue === this.xCells + 1 && !pathCoversAllCells) {
+                 console.log("Last number reached, continue filling empty cells.");
             }
-        }
-    }
+        },
 
-    return null; // Path not found
-}
+        // --- Timer ---
+        startTimer() {
+            this.stopTimer();
+            this.timeRemaining = this.timeLimit;
+            this.updateTimerDisplay();
 
-// Updated function to draw the path
-function drawPath(fromCell, toCell) {
-    const path = findPath(fromCell, toCell);
-    if (!path) {
-        showMessage("Valid path not found!");
-        return;
-    }
+            this.timerInterval = setInterval(() => {
+                this.timeRemaining--;
+                this.updateTimerDisplay();
 
-    for (let i = 0; i < path.length - 1; i++) {
-        const current = path[i];
-        const next = path[i + 1];
-
-        const currentCell = currentPuzzle[current.row][current.col];
-        const nextCell = currentPuzzle[next.row][next.col];
-
-        // Highlight the current cell
-        if (!currentCell.classList.contains('selected')) {
-            currentCell.classList.add('selected');
-        }
-
-        drawLine(currentCell, nextCell);
-    }
-
-    // Highlight the final cell
-    if (!toCell.classList.contains('selected')) {
-        toCell.classList.add('selected');
-    }
-
-    // Check for game completion
-    checkGameCompletion();
-}
-
-// Game completion check
-function checkGameCompletion() {
-    console.trace("checkGameCompletion called"); // Debug output
-    const allCells = document.querySelectorAll('.cell');
-    const allSelected = Array.from(allCells).every(cell => cell.classList.contains('selected'));
-
-    if (allSelected) {
-        console.trace("All cells selected"); // Debug output
-        const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
-        if (lastValue === xCells) {
-            console.trace("Game completed successfully"); // Debug output
-            showMessage("Congratulations! You successfully completed the game!");
-            stopTimer();
-            score += 1;
-            updateScore();
-            disableGameInteraction();
-        } else {
-            console.trace("Game completed incorrectly"); // Debug output
-            showMessage("You must finish the path at number: " + xCells + "!");
-        }
-    } else {
-        const lastValue = parseInt(currentPath[currentPath.length - 1]?.dataset.value);
-        let allNumbersConnected = true;
-        let allEmptyCellsConnected = true;
-
-        if (lastValue) {
-            // Check if all numbers from 1 to the last number are selected
-            for (let i = 1; i <= lastValue; i++) {
-                const cell = findCellByValue(i);
-                if (!cell || !cell.classList.contains('selected')) {
-                    console.trace(`Number ${i} is not selected`); // Debug output
-                    allNumbersConnected = false;
+                if (this.timeRemaining <= 0) {
+                    this.handleGameOver("Time's up!");
                 }
-            }
+            }, 1000);
+        },
 
-            // Check if all empty cells have been captured
-            allCells.forEach(cell => {
-                if (!cell.dataset.value && !cell.classList.contains('selected')) {
-                    console.trace("Empty cell not captured"); // Debug output
-                    allEmptyCellsConnected = false;
-                }
+        stopTimer() {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        },
+
+        updateTimerDisplay() {
+            const minutes = String(Math.floor(this.timeRemaining / 60)).padStart(2, '0');
+            const seconds = String(this.timeRemaining % 60).padStart(2, '0');
+            timerElement.textContent = `Time: ${minutes}:${seconds}`;
+        },
+
+        handleGameOver(reason) {
+             if (this.isGameOver) return;
+             this.isGameOver = true;
+             this.stopTimer();
+             this.isDrawing = false;
+             this.disableInput();
+             this.showMessage(reason + " Game Over!");
+             this.playSound(soundLose);
+             console.log("Game Lost:", reason);
+        },
+
+        // --- Score & Level Persistence ---
+        updateScoreDisplay() {
+             scoreElement.textContent = `Score: ${this.score}`;
+        },
+        saveScore() {
+            localStorage.setItem('zipItHighScore', this.score.toString());
+            this.updateScoreDisplay();
+        },
+        loadScore() {
+            const savedScore = localStorage.getItem('zipItHighScore');
+            this.score = savedScore ? parseInt(savedScore, 10) : 0;
+            this.updateScoreDisplay();
+        },
+        saveLevel() {
+            localStorage.setItem('zipItCurrentLevel', this.level.toString());
+            console.log(`Saved level: ${this.level}`);
+        },
+        loadLevel() {
+            const savedLevel = localStorage.getItem('zipItCurrentLevel');
+            const parsedLevel = savedLevel ? parseInt(savedLevel, 10) : 1;
+            this.level = (parsedLevel && parsedLevel > 0) ? parsedLevel : 1;
+            console.log(`Loaded level: ${this.level}`);
+        },
+
+        // --- Input Control ---
+        disableInput() {
+            undoButton.disabled = true;
+            resetLevelButton.disabled = true;
+        },
+        enableInput() {
+             undoButton.disabled = false;
+             resetLevelButton.disabled = false;
+        },
+
+
+        // --- Utility ---
+        getPathValues() {
+            return this.currentPath.map(step => step.cell.dataset.value || 'E').join(' -> ');
+        },
+
+        showMessage(message) {
+            console.log("Message:", message);
+
+            const messageBox = document.createElement('div');
+            messageBox.classList.add('message-box');
+
+            const messageText = document.createElement('span');
+            messageText.textContent = message;
+
+            const closeButton = document.createElement('button');
+            closeButton.classList.add('close-button');
+            closeButton.innerHTML = '×';
+            closeButton.onclick = () => {
+                 messageBox.style.opacity = '0';
+                 messageBox.style.transform = 'translateX(10px)';
+                 setTimeout(() => messageBox.remove(), 300);
+            };
+
+            messageBox.appendChild(messageText);
+            messageBox.appendChild(closeButton);
+            messageContainer.appendChild(messageBox);
+
+            requestAnimationFrame(() => {
+                 requestAnimationFrame(() => {
+                     messageBox.classList.add('show');
+                 });
             });
 
-            // If numbers or empty cells are not captured, show a message
-            if (!allNumbersConnected || !allEmptyCellsConnected) {
-                showMessage("Link all numbers sequentially and fill all cells!");
-                return;
-            }
 
-            // Check if the path continues after the last number
-            if (lastValue === xCells && currentPath.length > xCells) {
-                const nextCell = currentPath[currentPath.length - 1];
-                if (nextCell) {
-                    console.trace("Path continues after the last number"); // Debug output
-                    showMessage("Link all numbers sequentially and fill all cells!");
-                    return;
-                }
-            }
-        }
-    }
-}
-
-// Mouse down handler to start drawing line
-function handleMouseDown(e) {
-    const cell = e.target.closest('.cell');
-    if (!cell) return;
-
-    const value = parseInt(cell.dataset.value);
-
-    // Check: Path can only start with number 1
-    if (currentPath.length === 0 && value !== 1) {
-        showMessage("You must start the path from number 1!"); // Error message
-        playErrorSound();
-        return;
-    }
-
-    // Check: If the path has already started, it can only continue from the last cell
-    if (currentPath.length > 0 && cell !== currentPath[currentPath.length - 1]) {
-        showMessage("You can only continue from the last cell in the path!"); // Error message
-        playErrorSound();
-        return;
-    }
-
-    console.trace("handleMouseDown called for cell:", cell.dataset.value); // Debug output
-
-    isDrawing = true;
-
-    // If the cell is not selected yet, add it to the path
-    if (!currentPath.includes(cell)) {
-        currentPath.push(cell);
-        console.trace("currentPath updated:", currentPath.map(c => c.dataset.value)); // Debug output
-        cell.classList.add('selected');
-    }
-}
-
-// Updated handler for drawing line while moving the mouse
-function handleMouseMove(e) {
-    if (!isDrawing) return;
-
-    const cell = e.target.closest('.cell');
-    if (!cell) return;
-
-    const lastCell = currentPath[currentPath.length - 1];
-
-    // If the user is moving forward
-    if (!cell.classList.contains('selected')) {
-        // Check if the cell is a neighbor (only up, down, left, or right)
-        if (!isNeighbor(lastCell, cell)) return;
-
-        // Add the current cell to the path
-        currentPath.push(cell);
-        cell.classList.add('selected');
-
-        // Draw line between the last and current cell
-        drawLine(lastCell, cell);
-    }
-    // If the user is moving back
-    else if (currentPath.length > 1 && currentPath[currentPath.length - 2] === cell) {
-        // Remove the last line
-        const lastLine = lineElements.pop();
-        const lastlineContent = lineContentElements.pop();
-
-        if (lastLine && lastlineContent) {
-            lastLine.remove();
-            lastlineContent.remove();
-        }
-
-        // Unselect the last cell
-        const lastCell = currentPath.pop();
-        lastCell.classList.remove('selected');
-    }
-}
-
-// Handler for finishing the line drawing
-function handleMouseUp() {
-    isDrawing = false;
-    checkGameCompletion(); // Check for game completion
-}
-
-// Check if the cells are neighbors
-function isNeighbor(cell1, cell2) {
-    const row1 = parseInt(cell1.dataset.row);
-    const col1 = parseInt(cell1.dataset.col);
-    const row2 = parseInt(cell2.dataset.row);
-    const col2 = parseInt(cell2.dataset.col);
-
-    // Check if cells are either in the same row or column
-    return (
-        (row1 === row2 && Math.abs(col1 - col2) === 1) || // Horizontal neighbor
-        (col1 === col2 && Math.abs(row1 - row2) === 1)    // Vertical neighbor
-    );
-}
-
-// Find a cell by its value
-function findCellByValue(value) {
-    for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-            if (currentPuzzle[i][j].dataset.value == value) {
-                return currentPuzzle[i][j];
-            }
-        }
-    }
-    return null;
-}
-
-// Undo the last action
-document.getElementById('undoButton').addEventListener('click', () => {
-    if (currentPath.length > 1) { // Make sure there's at least one line to undo
-        const lastCell = currentPath.pop(); // Remove the last cell from the path
-        lastCell.classList.remove('selected'); // Unselect the cell
-
-        const lastLine = lineElements.pop(); // Remove the last line
-        const lastlineContent = lineContentElements.pop(); // Remove the last line corner
-
-        if (lastLine && lastlineContent) {
-            lastLine.remove(); // Remove the line from the DOM
-            lastlineContent.remove(); // Remove the line corner from the DOM
-        }
-    } else {
-        showMessage("Can't undo further!"); // Use a universal function
-    }
-});
-
-// Restart button handler
-document.getElementById('restartButton').addEventListener('click', () => {
-    clearInterval(timerInterval); // Stop the current timer
-    initializePuzzle(); // Restart the puzzle grid
-    startTimer(); // Start a new timer
-    currentPath = [];
-    lineElements.forEach(line => line.remove());
-    lineContentElements.forEach(corner => corner.remove());
-    lineElements = [];
-    lineContentElements = [];
-    isPathStarted = false; // Reset the path start flag
-});
-
-// Save progress after every action
-document.addEventListener('mouseup', saveProgress);
-
-// Initialize the puzzle when the page loads
-window.onload = () => {
-    loadScore(); // Load score from local storage
-    loadProgress(); // Load game progress
-};
-
-function disableGameInteraction() {
-    const allCells = document.querySelectorAll('.cell');
-    if (allCells.length === 0) return; // Check if there are any cells in the grid
-
-    allCells.forEach(cell => {
-        cell.removeEventListener('mousedown', handleMouseDown);
-        cell.removeEventListener('mousemove', handleMouseMove);
-        cell.removeEventListener('mouseup', handleMouseUp);
-    });
-}
-
-// Universal function to show messages
-function showMessage(message) {
-    console.warn("Message:", message); // Debug output
-
-    const messageContainer = document.getElementById('messageContainer');
-
-    if (!messageContainer) {
-        console.error("Message container not found");
-        return;
-    }
-
-    // Create a new message
-    const messageBox = document.createElement('div');
-    messageBox.classList.add('message-box');
-
-    // Create message text
-    const messageText = document.createElement('span');
-    messageText.textContent = message;
-
-    // Create a close button
-    const closeButton = document.createElement('button');
-    closeButton.classList.add('close-button');
-    closeButton.textContent = '×';
-    closeButton.onclick = () => {
-        messageBox.style.transform = 'translateX(5px)'; // Move right
-        messageBox.style.opacity = '0'; // Reduce opacity
-        setTimeout(() => {
-            messageBox.remove(); // Remove message from DOM
-        }, 300); // Account for animation time
-    };
-
-    // Add text and button to the message
-    messageBox.appendChild(messageText);
-    messageBox.appendChild(closeButton);
-
-    // Add the message to the container
-    messageContainer.appendChild(messageBox);
-
-    // Show the message with animation
-    setTimeout(() => {
-        messageBox.style.opacity = '1';
-    }, 100);
-
-    // Remove the message after a set time with fade-out animation
-    setTimeout(() => {
-        if (messageBox.parentElement) { // Check if the message still exists
-            messageBox.style.transform = 'translateX(5px)'; // Move right
-            messageBox.style.opacity = '0'; // Reduce opacity
             setTimeout(() => {
-                messageBox.remove(); // Remove message from DOM
-            }, 300); // Account for animation time
+                if (messageBox.parentElement) {
+                     closeButton.onclick();
+                }
+            }, MSG_DISPLAY_TIME);
+        },
+
+        playSound(audioElement) {
+            if (audioElement) {
+                audioElement.currentTime = 0;
+                audioElement.play().catch(e => console.error("Error playing sound:", e));
+            }
+        },
+
+        addEventListeners() {
+            undoButton.addEventListener('click', this.handleUndo.bind(this));
+            resetLevelButton.addEventListener('click', this.handleResetLevel.bind(this));
+            restartGameButton.addEventListener('click', this.handleRestartGame.bind(this));
+            nextLevelButton.addEventListener('click', this.handleNextLevel.bind(this));
+
+            document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+            document.addEventListener('dragstart', (e) => e.preventDefault());
         }
-    }, msgDisplayTime); // Use global variable for message display time
-}
+
+    }; // End of game object
+
+    // --- Initialize Game ---
+    game.init();
+
+}); // End DOMContentLoaded

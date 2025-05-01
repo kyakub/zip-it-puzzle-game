@@ -6,13 +6,25 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #fff;
-    color: #000;
+    background-color: #f0f0f0; /* Lighter background */
+    color: #333; /* Darker text */
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh; /* Use min-height */
     flex-direction: column;
+    padding: 20px; /* Add padding to body */
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #fff; /* White container background */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    max-width: 90vw; /* Prevent excessive width on large screens */
 }
 
 .content {
@@ -21,144 +33,165 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 800px;
-    padding: 20px;
+    margin-bottom: 20px; /* Added margin */
 }
 
 .logo {
     display: flex;
     width: 100%;
-    height: auto;
     margin-bottom: 20px;
     align-items: center;
     flex-direction: row;
     justify-content: center;
+    gap: 10px; /* Added gap */
 }
 
 .logo img {
-    width: 50px;
+    width: 40px; /* Slightly smaller logo */
     height: auto;
 }
 
 h1 {
-    margin-left: 10px;
+    margin-left: 0; /* Removed margin */
+    font-size: 1.8em; /* Responsive font size */
+    color: #333;
 }
 
-.content .text {
-    font-size: 20px;
-}
-
-.game-container {
+.game-info {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: space-around; /* Space out info */
+    width: 100%;
+    max-width: 400px; /* Limit width */
+    margin-bottom: 20px;
+    font-size: 1.1em; /* Larger font */
+    font-weight: bold;
 }
+
 
 .puzzle-grid {
     display: grid;
     gap: 0;
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* Increased margin */
     position: relative;
-    border: 1px solid #000;
+    border: 2px solid #555; /* Thicker border */
+    background-color: #fff; /* Ensure background */
+    /* Grid dimensions set by JS */
 }
 
 .cell {
-    width: 60px;
-    height: 60px;
-    border: 1px solid #000;
+    /* Dimensions set by JS */
+    border: 1px solid #ccc; /* Lighter border */
     text-align: center;
-    font-size: 20px;
+    font-size: 1.4em; /* Larger font */
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
     cursor: pointer;
     user-select: none;
+    transition: background-color 0.1s ease;
+    font-weight: bold;
 }
 
 .cell.selected {
-    background-color: #ccc;
+    background-color: #a0e0a0; /* Light green for selected */
 }
 
 .cell span {
+    /* Number styles */
     z-index: 2;
-    background-color: #000;
-    width: 30px;
-    height: 30px;
+    background-color: #333; /* Dark background for numbers */
+    min-width: 35px; /* Ensure minimum size */
+    height: 35px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 30px;
-    font-size: 15px;
+    border-radius: 50%; /* Circular numbers */
+    font-size: 0.8em; /* Relative font size */
     font-weight: bold;
     color: #fff;
+    padding: 5px; /* Add padding */
+    line-height: 1; /* Ensure text vertical alignment */
 }
 
 .cell.selected span {
-    background-color: #333;
-    color: #fff;
+    background-color: #1a5e1a; /* Darker green for selected numbers */
 }
 
 .line {
     z-index: 1;
     position: absolute;
     pointer-events: none;
+    height: 10px; /* Line thickness */
+    background: #555; /* Darker line color */
+    border-radius: 5px; /* Rounded line ends */
+    transform-origin: 0 50%; /* Rotation origin */
+    /* Width, position, and transform set by JS */
 }
 
-.line-content {
-    display: block;
-    width: 69px;
-    height: 10px;
-    background: #444;
-    margin: 0px 0px 0px -4px;
-    border-radius: 10px;
-    transition: width 0.3s ease, transform 0.3s ease;
-}
+/* Removed .line-content - styling applied directly to .line */
 
 .buttons {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 25px; /* Increased gap */
     margin-top: 20px;
 }
 
 button {
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 12px 25px; /* Larger buttons */
+    font-size: 1em; /* Relative font size */
     cursor: pointer;
-    border: 3px solid black;
+    border: 2px solid #555; /* Consistent border */
     background-color: white;
-    transition: background-color 0.2s ease;
-    border-radius: 6px;
+    color: #333;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    border-radius: 8px; /* More rounded */
+    font-weight: bold;
 }
 
 button:hover {
-    background-color: #000;
+    background-color: #555;
     color: white;
 }
 
-button:focus {
-    outline: none;
+button:active {
+    transform: scale(0.95); /* Click feedback */
 }
 
+
+button:focus {
+    outline: 2px solid #77aaff; /* Focus outline */
+    outline-offset: 2px;
+}
+
+/* Message Box Styles - slightly adjusted */
 .message-box {
-    display: block;
+    display: flex; /* Use flex for alignment */
     align-items: center;
-    background-color: white;
-    color: black;
-    font-size: .85em;
-    border: 1px solid #333;
+    background-color: #fff;
+    color: #333;
+    font-size: .9em;
+    border: 1px solid #ccc;
+    border-left: 5px solid #555; /* Accent border */
     border-radius: 4px;
-    padding: 6px 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px 15px; /* Increased padding */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     opacity: 0;
-    transform: translateX(0);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateX(10px); /* Start slightly off-screen */
+    transition: opacity 0.4s ease, transform 0.4s ease;
     position: relative;
     z-index: 1000;
     word-wrap: break-word;
-    margin-bottom: 8px;
+    margin-bottom: 10px; /* Spacing between messages */
+    max-width: 300px; /* Limit message width */
 }
+
+.message-box.show { /* Class to trigger animation */
+    opacity: 1;
+    transform: translateX(0);
+}
+
 
 .message-box span {
     flex-grow: 1;
@@ -168,15 +201,16 @@ button:focus {
 .message-box .close-button {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 20px; /* Larger close button */
     font-weight: bold;
     cursor: pointer;
-    color: black;
-    padding: 0;
+    color: #aaa; /* Lighter color */
+    padding: 0 5px;
+    line-height: 1;
 }
 
 .message-box .close-button:hover {
-    color: red;
+    color: #f44336; /* Red on hover */
 }
 
 #messageContainer {
@@ -184,6 +218,7 @@ button:focus {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    display: grid;
-    justify-items: end;
+    display: flex; /* Use flex for vertical stacking */
+    flex-direction: column; /* Stack messages */
+    align-items: flex-end; /* Align messages to the right */
 }
