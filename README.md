@@ -1,6 +1,4 @@
-# Zip-IT Puzzle Game
-
-![Zip-IT Logo](logo.png) <!-- Make sure logo.png exists -->
+# <img src="logo.png" width="80"/> Zip-IT Puzzle Game
 
 A simple web-based puzzle game where you connect numbers in sequence (1, 2, 3...) while filling the entire grid.
 
