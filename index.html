@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zip-IT Puzzle</title>
-    <!-- Assuming favicon is also in assets -->
     <link rel="icon" type="image/png" href="assets/favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,14 +13,13 @@
     <div class="game-container">
         <div class="content">
             <div class="logo">
-                <!-- Updated path for logo -->
                 <img src="assets/logo.png" alt="Zip-IT Logo">
                 <h1>Zip-IT Puzzle</h1>
             </div>
             <div class="game-info">
-                 <div id="levelDisplay" class="text">Level: 1</div>
-                 <div id="timer" class="text">Time: 02:00</div>
-                 <div id="score" class="text">Score: 0</div>
+                <div id="levelDisplay" class="text">Level: 1</div>
+                <div id="timer" class="text">Time: 00:00</div>
+                <div id="score" class="text">Score: 0</div>
             </div>
         </div>
 
@@ -39,7 +37,20 @@
 
     <div id="messageContainer"></div>
 
-    <!-- Updated paths for audio files -->
+    <!-- Restart Confirmation Modal -->
+    <div id="restartModalOverlay" class="modal-overlay">
+        <div id="restartModal" class="modal">
+            <h2>Confirm Restart</h2>
+            <p class="modal-message">Warning! Your current game progress (level and score) will be reset. Are you sure
+                you want to restart?</p>
+            <div class="modal-buttons">
+                <button id="modalConfirmRestart" class="modal-button modal-button-confirm">OK</button>
+                <button id="modalCancelRestart" class="modal-button modal-button-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
     <audio id="soundTick" src="assets/tick.mp3" preload="auto"></audio>
     <audio id="soundError" src="assets/error.mp3" preload="auto"></audio>
     <audio id="soundWin" src="assets/win.mp3" preload="auto"></audio>

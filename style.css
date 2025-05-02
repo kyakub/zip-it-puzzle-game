@@ -6,25 +6,27 @@
 
 body {
     font-family: Arial, sans-serif;
-    background-color: #f0f0f0; /* Lighter background */
-    color: #333; /* Darker text */
+    background-color: #f0f0f0;
+    color: #333;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh; /* Use min-height */
+    min-height: 100vh;
     flex-direction: column;
-    padding: 20px; /* Add padding to body */
+    padding: 20px;
 }
 
 .game-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #fff; /* White container background */
+    background-color: #fff;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 90vw; /* Prevent excessive width on large screens */
+    max-width: 90vw;
+    position: relative;
+    z-index: 1; /* Ensure game is below modal */
 }
 
 .content {
@@ -33,7 +35,7 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    margin-bottom: 20px; /* Added margin */
+    margin-bottom: 20px;
 }
 
 .logo {
@@ -43,46 +45,48 @@ body {
     align-items: center;
     flex-direction: row;
     justify-content: center;
-    gap: 10px; /* Added gap */
+    gap: 10px;
 }
 
 .logo img {
-    width: 40px; /* Slightly smaller logo */
+    width: 40px;
     height: auto;
 }
 
 h1 {
-    margin-left: 0; /* Removed margin */
-    font-size: 1.8em; /* Responsive font size */
+    margin-left: 0;
+    font-size: 1.8em;
     color: #333;
 }
 
 .game-info {
     display: flex;
-    justify-content: space-around; /* Space out info */
+    justify-content: space-around;
     width: 100%;
-    max-width: 400px; /* Limit width */
+    max-width: 400px;
     margin-bottom: 20px;
-    font-size: 1.1em; /* Larger font */
+    font-size: 1.1em;
     font-weight: bold;
 }
-
 
 .puzzle-grid {
     display: grid;
     gap: 0;
-    margin-bottom: 25px; /* Increased margin */
-    position: relative;
-    border: 2px solid #555; /* Thicker border */
-    background-color: #fff; /* Ensure background */
+    margin-bottom: 25px;
+    position: relative; /* Needed for lines and generating text */
+    border: 2px solid #555;
+    background-color: #fff;
     /* Grid dimensions set by JS */
+    min-height: 100px;
+    min-width: 100px;
+    overflow: hidden;
 }
 
 .cell {
     /* Dimensions set by JS */
-    border: 1px solid #ccc; /* Lighter border */
+    border: 1px solid #ccc;
     text-align: center;
-    font-size: 1.4em; /* Larger font */
+    font-size: 1.4em;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -94,104 +98,130 @@ h1 {
 }
 
 .cell.selected {
-    background-color: #a0e0a0; /* Light green for selected */
+    background-color: #a0e0a0;
 }
 
 .cell span {
-    /* Number styles */
     z-index: 2;
-    background-color: #333; /* Dark background for numbers */
-    min-width: 35px; /* Ensure minimum size */
+    background-color: #333;
+    min-width: 35px;
     height: 35px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 50%; /* Circular numbers */
-    font-size: 0.8em; /* Relative font size */
+    border-radius: 50%;
+    font-size: 0.8em;
     font-weight: bold;
     color: #fff;
-    padding: 5px; /* Add padding */
-    line-height: 1; /* Ensure text vertical alignment */
+    padding: 5px;
+    line-height: 1;
+    pointer-events: none; /* Prevent number span from intercepting mouse events */
 }
 
 .cell.selected span {
-    background-color: #1a5e1a; /* Darker green for selected numbers */
+    background-color: #1a5e1a;
 }
 
 .line {
     z-index: 1;
     position: absolute;
     pointer-events: none;
-    height: 10px; /* Line thickness */
-    background: #555; /* Darker line color */
-    border-radius: 5px; /* Rounded line ends */
-    transform-origin: 0 50%; /* Rotation origin */
+    height: 12px; /* Line thickness */
+    background: #333; /* Darker color */
+    border-radius: 6px; /* Fully rounded ends */
+    transform-origin: 0 50%;
     /* Width, position, and transform set by JS */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
-
-/* Removed .line-content - styling applied directly to .line */
 
 .buttons {
     display: flex;
     justify-content: center;
-    gap: 25px; /* Increased gap */
+    gap: 25px;
     margin-top: 20px;
 }
 
 button {
-    padding: 12px 25px; /* Larger buttons */
-    font-size: 1em; /* Relative font size */
+    padding: 12px 25px;
+    font-size: 1em;
     cursor: pointer;
-    border: 2px solid #555; /* Consistent border */
+    border: 2px solid #555;
     background-color: white;
     color: #333;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
-    border-radius: 8px; /* More rounded */
+    border-radius: 8px;
     font-weight: bold;
 }
 
-button:hover {
+button:hover:not(:disabled) {
     background-color: #555;
     color: white;
 }
 
-button:active {
-    transform: scale(0.95); /* Click feedback */
+button:active:not(:disabled) {
+    transform: scale(0.95);
 }
 
+button:disabled {
+    cursor: not-allowed;
+    background-color: #e0e0e0;
+    border-color: #ccc;
+    color: #999;
+    transform: none;
+}
 
 button:focus {
-    outline: 2px solid #77aaff; /* Focus outline */
+    outline: 2px solid #77aaff;
     outline-offset: 2px;
 }
 
-/* Message Box Styles - slightly adjusted */
+.generating-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 1.2em;
+    color: #555;
+    font-style: italic;
+    text-align: center;
+    grid-column: 1 / -1; /* Span all grid columns */
+    grid-row: 1 / -1; /* Span all grid rows */
+    padding: 20px;
+    box-sizing: border-box;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 5;
+}
+
+/* --- Message Box Styles --- */
 .message-box {
-    display: flex; /* Use flex for alignment */
+    display: flex;
     align-items: center;
     background-color: #fff;
     color: #333;
     font-size: .9em;
     border: 1px solid #ccc;
-    border-left: 5px solid #555; /* Accent border */
+    border-left: 5px solid #555;
     border-radius: 4px;
-    padding: 10px 15px; /* Increased padding */
+    padding: 10px 15px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     opacity: 0;
-    transform: translateX(10px); /* Start slightly off-screen */
+    transform: translateX(10px);
     transition: opacity 0.4s ease, transform 0.4s ease;
     position: relative;
     z-index: 1000;
     word-wrap: break-word;
-    margin-bottom: 10px; /* Spacing between messages */
-    max-width: 300px; /* Limit message width */
+    margin-bottom: 10px;
+    max-width: 300px;
 }
 
-.message-box.show { /* Class to trigger animation */
+.message-box.show {
     opacity: 1;
     transform: translateX(0);
 }
-
 
 .message-box span {
     flex-grow: 1;
@@ -201,16 +231,16 @@ button:focus {
 .message-box .close-button {
     background: none;
     border: none;
-    font-size: 20px; /* Larger close button */
+    font-size: 20px;
     font-weight: bold;
     cursor: pointer;
-    color: #aaa; /* Lighter color */
+    color: #aaa;
     padding: 0 5px;
     line-height: 1;
 }
 
 .message-box .close-button:hover {
-    color: #f44336; /* Red on hover */
+    color: #f44336;
 }
 
 #messageContainer {
@@ -218,7 +248,89 @@ button:focus {
     top: 20px;
     right: 20px;
     z-index: 1000;
-    display: flex; /* Use flex for vertical stacking */
-    flex-direction: column; /* Stack messages */
-    align-items: flex-end; /* Align messages to the right */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.85); /* White fade */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Above game */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal {
+    background-color: #fff;
+    padding: 25px 35px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    z-index: 1001; /* Above overlay */
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal {
+    transform: scale(1);
+}
+
+.modal h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.modal-message {
+    margin-bottom: 25px;
+    font-size: 1.05em;
+    line-height: 1.6;
+    color: #555;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.modal-button {
+    padding: 10px 20px;
+    min-width: 80px;
+}
+
+.modal-button-confirm {
+    border-color: #d9534f;
+    color: #d9534f;
+}
+
+.modal-button-confirm:hover:not(:disabled) {
+    background-color: #d9534f;
+    color: white;
+}
+
+.modal-button-cancel {
+    border-color: #555;
+    color: #555;
+}
+
+.modal-button-cancel:hover:not(:disabled) {
+    background-color: #555;
+    color: white;
 }
