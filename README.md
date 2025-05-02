@@ -1,63 +1,63 @@
 # <img src="assets/logo.png" width="50"/> Zip-IT Puzzle Game
 
-A challenging web-based puzzle game where you must connect numbered cells in sequence while filling the entire grid within the time limit.
+A challenging web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
 
 ## How to Play
 
-1.  **Start:** Click and hold on the cell containing the number '1'. A path can only begin here.
-2.  **Draw:** Drag your mouse to adjacent (up, down, left, right) cells to draw a path.
+1.  **Start:** Click and hold (or tap and hold) on the cell containing the number '1'. A path can only begin here.
+2.  **Draw:** Drag your mouse (or finger) to adjacent (up, down, left, right) cells to draw a path.
 3.  **Sequence:** You must enter cells containing numbers in ascending order (1 -> 2 -> 3...). You can traverse empty cells freely between numbers.
-4.  **Fill:** After connecting the highest number for the level, continue drawing the path until *all* remaining empty cells in the grid are filled.
-5.  **Goal:** Successfully draw a single, continuous path that starts at '1', visits all numbered cells in sequence, and covers every cell in the grid before the time runs out.
+4.  **Fill & End:** After connecting the highest number for the level, continue drawing the path until *all* remaining empty cells in the grid are filled. The path *must end* on the cell containing the highest number for the level.
+5.  **Goal:** Successfully draw a single, continuous path that starts at '1', visits all numbered cells in sequence, covers every cell in the grid, ends on the highest number, and is completed before the time runs out.
 6.  **Controls:**
-    *   **Undo:** Removes the last segment of your current path. Can be used multiple times, but not while actively drawing (mouse button held down).
-    *   **Reset Level:** Restarts the *current* level attempt with a fresh grid and resets the timer. Your current score and level number are kept. Use this if you get stuck or run out of time.
-    *   **Restart Game:** Resets the entire game back to Level 1 and sets the score to 0. Your progress is saved at Level 1 / Score 0.
-    *   **Next Level:** Appears after successfully completing a level, allowing you to proceed.
+    *   **Undo:** Removes the last segment of your current path. Can be used multiple times, but not while actively drawing.
+    *   **Reset Level:** Restarts the *current* level attempt with a fresh grid and resets the timer. Your score and level number are kept.
+    *   **Restart Game:** Shows a confirmation prompt. If confirmed, resets the entire game back to Level 1 and sets the score to 0. Your progress is saved at Level 1 / Score 0.
+    *   **Next Level:** Appears only after successfully completing a level, allowing you to proceed.
 
 ## Features
 
-*   Sequential number connection mechanic.
-*   Requires complete grid coverage by the path.
-*   Progressive difficulty across levels.
+*   Challenging path-drawing puzzle connecting numbers in sequence.
+*   Requires complete grid coverage and ending on the final number.
+*   **Guaranteed solvable levels** using Hamiltonian path generation.
+*   **Asynchronous level generation** prevents UI freezes on complex levels (using Web Workers).
+*   Progressive difficulty across levels with updated rules.
 *   Timed challenge for each level.
 *   Scoring system with time bonus.
-*   Game progress (score and current level) saved in `localStorage` to resume playing later.
+*   Game progress (score and current level) saved in `localStorage`.
 *   Sound effects for feedback.
 *   Undo functionality.
-*   Clear visual feedback for the path and selected cells.
+*   Clear visual feedback for path and selected cells (lines are now thicker).
+*   **Restart confirmation modal** to prevent accidental progress loss.
+*   **Responsive touch controls** for mobile/tablet play.
 
 ## Scoring Logic
 
 Your score increases only when you successfully complete a level. The points awarded are calculated as follows:
 
-*   **Base Level Points:** You receive `Current Level Number * 10` points.
-    *   *Example: Completing Level 5 gives 5 * 10 = 50 base points.*
-*   **Time Bonus:** You receive points equal to the number of seconds remaining on the timer when you completed the level.
-    *   *Example: Finishing Level 5 with 45 seconds left gives a 45 point time bonus.*
+*   **Base Level Points:** `Current Level Number * 10` points.
+*   **Time Bonus:** Points equal to the number of seconds remaining on the timer.
 *   **Total Score Increase:** `(Level * 10) + Time Remaining`
-    *   *Example: Completing Level 5 with 45 seconds left increases your score by 50 + 45 = 95 points.*
 
-The score accumulates across levels and is only reset to 0 when you use the "Restart Game" button.
+The score accumulates across levels and is only reset to 0 when you confirm via the "Restart Game" modal.
 
 ## Level Difficulty Design
 
-The game aims for a gradual increase in difficulty with caps to prevent excessively large or complex grids:
+Difficulty increases gradually based on the level number:
 
-*   **Starting Point (Level 1):**
-    *   Grid Size: 5x5
-    *   Numbered Cells: 5
-    *   Time Limit: 120 seconds
-*   **Numbered Cells Increase:** The number of required sequential cells (`xCells`) increases by 1 every 10 levels.
-    *   *Example: Levels 1-10 have 5 numbers, Levels 11-20 have 6 numbers, etc.*
-    *   **Maximum Numbered Cells:** Capped at **13**.
-*   **Grid Size Increase:** The grid dimensions increase by 1 (e.g., 5x5 to 6x6) every 15 levels.
-    *   *Example: Levels 1-15 are 5x5, Levels 16-30 are 6x6, etc.*
-    *   **Maximum Grid Size:** Capped at **7x7**.
-*   **Time Limit Increase:** The base time limit increases by 10 seconds for each level past Level 1.
-    *   *Example: Level 1 = 120s, Level 2 = 130s, Level 10 = 210s.*
+*   **Grid Size:**
+    *   Starts at 5x5 (Levels 1-15).
+    *   Increases by 1 (e.g., 5x5 -> 6x6) every 15 levels.
+    *   Maximum grid size is **8x8** (Reached at Level 46+).
+*   **Numbered Cells (`xCells`):**
+    *   Starts at 5 (Levels 1-10).
+    *   Increases by 1 every 10 levels.
+    *   Maximum numbered cells is **14** (Reached at Level 91+).
+    *   *Constraint:* The number of required cells cannot exceed the total cells available in the current grid size.
+*   **Time Limit:**
+    *   Calculated based on a base time, with adjustments added per level, plus factors for the current grid size and the number of required connections (`xCells`), ensuring more complex levels have proportionally more time.
 
-This ensures a smoother difficulty curve that remains manageable even at higher levels.
+This progression aims for a steady challenge curve as players advance.
 
 ## Setup
 
@@ -68,22 +68,22 @@ This ensures a smoother difficulty curve that remains manageable even at higher 
     ├── index.html
     ├── script.js
     ├── style.css
+    ├── pathfinder.js  <-- Web Worker script
     └── assets/
         ├── logo.png
-        ├── favicon.png  (optional)
+        ├── favicon.png
         ├── tick.mp3
         ├── error.mp3
         ├── win.mp3
         └── lose.mp3
     ```
-3.  Make sure all required images (`logo.png`, `favicon.png`) and sound files (`tick.mp3`, `error.mp3`, `win.mp3`, `lose.mp3`) are present in the `assets/` folder.
-4.  Open `index.html` in a modern web browser.
+3.  Make sure all required images and sound files are present in the `assets/` folder.
+4.  Open `index.html` in a modern web browser that supports Web Workers.
 
 ## Future Enhancements Potential
 
-*   Guaranteed solvable puzzle generation (currently relies on random placement + game rules).
-*   More varied level progression rules.
+*   **Obstacles:** Adding walls or blocked cells to the grid for increased complexity.
 *   Visual themes.
-*   Touch controls for mobile devices.
 *   High score board display.
 *   Tutorial mode for first-time players.
+*   More varied level progression rules or special level types.
