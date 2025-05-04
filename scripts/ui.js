@@ -124,8 +124,8 @@ export function clearSvgPath() {
 export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
     elements.numbersSvgElement.innerHTML = '';
     const newSvgElements = {};
-    const circleRadius = Math.min(17.5, Math.max(9, cellSize * 0.275));
-    const fontSize = Math.min(19.6, Math.max(9.8, cellSize * 0.28));
+    const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275));
+    const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28));
 
     for (const cellKey in numberPositions) {
         const value = numberPositions[cellKey];

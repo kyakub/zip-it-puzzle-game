@@ -18,7 +18,7 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
     *   **Undo Button:** Removes the last path segment (cannot be used while drawing or paused).
     *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused).
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
-    *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0. Pauses game first if active.
+    *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0 and starts the new game immediately (does not pause).
     *   **Pause/Continue:** Pauses the timer and saves the game state. Click again to resume. Game also auto-pauses if you switch browser tabs or minimize the window. A visual overlay indicates the paused state.
     *   **Next Level:** Appears only after completing a level successfully.
     *   **Sound: On/Off:** Toggles game sound effects. Preference is saved.
@@ -45,6 +45,7 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 *   **Modular Codebase:** JavaScript code organized into ES6 modules for better maintainability.
 *   **Organized File Structure:** Code, styles, and assets are placed in dedicated directories.
 *   Smoother UI: Fixed button flickering during path drawing.
+*   Improved Restart Flow: Restarting the game no longer pauses unnecessarily.
 
 ## Scoring Logic (Points)
 

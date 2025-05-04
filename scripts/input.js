@@ -71,6 +71,7 @@ function handleResetLevel() {
 }
 
 function handleRestartGame() {
+    // Removed the pause logic here
     logic.requestRestartGame();
 }
 

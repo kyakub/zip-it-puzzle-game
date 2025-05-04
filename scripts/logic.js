@@ -13,6 +13,7 @@ export function startLevel(levelNumber, restoredState = null) {
     terminateWorker();
     ui.clearSvgPath();
     ui.hideTempLine();
+    ui.togglePauseOverlay(false); // Ensure pause overlay is hidden when starting any level initially
 
     let level, points, gridRows, gridCols, xCells, timeLimit, initialTime = null, numberPositions, pathPointsData, calculatedCellSize, isPaused, expectedNextValue;
 
@@ -28,13 +29,17 @@ export function startLevel(levelNumber, restoredState = null) {
         calculatedCellSize = restoredState.calculatedCellSize;
         const elapsedSeconds = Math.floor((Date.now() - restoredState.saveTimestamp) / 1000);
         initialTime = restoredState.timeRemaining - elapsedSeconds;
-        isPaused = restoredState.isPaused ?? false;
+        isPaused = restoredState.isPaused ?? false; // Keep track if loaded state was paused
         pathPointsData = restoredState.pathPointsData || [];
+
+        updateState({ // Update state first
+            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize, numberPositions, pathPoints: pathPointsData, isPaused, expectedNextValue
+        });
 
     } else {
         const params = getLevelParams(levelNumber);
         level = levelNumber;
-        points = getState().points;
+        points = getState().points; // Get potentially reset points
         gridRows = params.rows;
         gridCols = params.cols;
         xCells = params.xCells;
@@ -42,15 +47,16 @@ export function startLevel(levelNumber, restoredState = null) {
         calculatedCellSize = calculateCellSize(gridRows, gridCols, params.baseCellSize);
         numberPositions = {};
         pathPointsData = [];
-        isPaused = false;
+        isPaused = false; // New level always starts unpaused
         expectedNextValue = 1;
+
+        updateState({ // Update state for new level
+            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize, numberPositions, pathPoints: pathPointsData, isPaused, expectedNextValue
+        });
     }
 
-    updateState({
-        level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize, numberPositions, pathPoints: pathPointsData, isPaused, expectedNextValue
-    });
 
-    if (initialTime !== null && initialTime <= 0) {
+    if (restoredState && initialTime !== null && initialTime <= 0) {
         updateState({ timeRemaining: 0 });
         updateUiForNewLevel();
         handleGameOver("Time ran out while away!", true);
@@ -59,13 +65,13 @@ export function startLevel(levelNumber, restoredState = null) {
         return;
     }
 
-    const timeRemaining = (initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
+    const timeRemaining = (restoredState && initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
     updateState({ timeRemaining });
 
-    updateUiForNewLevel();
+    updateUiForNewLevel(); // Update displays (level, points, timer etc.)
     ui.updateSvgPath(pathPointsData, calculatedCellSize);
-    timer.stopTimer();
-    ui.updateButtonStates(getState());
+    timer.stopTimer(); // Ensure timer is stopped before potentially starting
+
 
     if (restoredState) {
         const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, getState().inputHandlers);
@@ -75,18 +81,20 @@ export function startLevel(levelNumber, restoredState = null) {
         ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSize);
 
         if (isPaused) {
-            pauseGame(false); // Don't save state again
-            ui.togglePauseOverlay(true); // Explicitly show overlay on load
+            // State is already set to paused, just update UI
+            ui.togglePauseOverlay(true);
+            ui.updatePauseButton(true);
         } else {
-            timer.startTimer();
+            timer.startTimer(); // Start timer only if not paused on load
         }
-        ui.updateButtonStates(getState());
+        ui.updateButtonStates(getState()); // Update buttons based on loaded state
 
     } else {
+        // This path is taken by performRestart
         levelGenerator.generateLevelAsync(gridRows, gridCols, (hamiltonianPath) => {
             finishPuzzleGeneration(hamiltonianPath);
-            timer.startTimer();
-            ui.updateButtonStates(getState());
+            timer.startTimer(); // Start timer for the new level 1
+            ui.updateButtonStates(getState()); // Update buttons for playing state
         });
     }
 }
@@ -96,7 +104,7 @@ function updateUiForNewLevel() {
     ui.updateLevelDisplay(level);
     ui.updatePointsDisplay(points);
     ui.updateTimerDisplay(timeRemaining);
-    ui.updatePauseButton(isPaused);
+    ui.updatePauseButton(isPaused); // Reflects the actual state (false for new levels)
     ui.updateSoundButton(isMuted);
 }
 
@@ -326,7 +334,7 @@ export function requestResetLevel() {
     persistence.clearFullGameState();
     timer.stopTimer();
     terminateWorker();
-    startLevel(level);
+    startLevel(level); // Restart current level
     ui.showMessage(`Level Reset! ${penaltyMsg}`);
 }
 
@@ -343,7 +351,7 @@ export function requestNextLevel() {
         const nextLevel = state.level + 1;
         updateState({ level: nextLevel });
         persistence.saveLevel(nextLevel);
-        startLevel(nextLevel);
+        startLevel(nextLevel); // Start next level
     } else {
         ui.showMessage("Win condition error. Cannot proceed.", null, true);
         // Ensure buttons reflect non-win state if somehow called incorrectly
@@ -353,10 +361,7 @@ export function requestNextLevel() {
 }
 
 export function requestRestartGame() {
-    const { isPaused, isGameOver, isGenerating } = getState();
-    if (!isPaused && !isGameOver && !isGenerating) {
-        pauseGame(false);
-    }
+    // Don't pause here, just show the modal
     ui.showRestartModal();
 }
 
@@ -364,10 +369,11 @@ export function performRestart() {
     persistence.clearFullGameState();
     terminateWorker();
     timer.stopTimer();
-    resetFullGameState();
-    persistence.savePoints(0);
-    persistence.saveLevel(1);
-    startLevel(1);
+    const currentPoints = getState().points; // Preserve points temporarily if needed, but rules say reset
+    resetFullGameState(); // Resets level to 1, points to 0, isPaused to false, etc.
+    persistence.savePoints(0); // Explicitly save 0 points
+    persistence.saveLevel(1); // Explicitly save level 1
+    startLevel(1); // Start level 1 (will set state.isPaused to false and start timer)
     ui.showMessage("Game Restarted!");
 }
 
