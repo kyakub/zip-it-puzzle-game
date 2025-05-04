@@ -2,7 +2,7 @@ import { getState, updateState } from './state.js';
 import * as ui from './ui.js';
 import * as logic from './logic.js';
 import * as audio from './audio.js';
-import * as utils from './utils.js';
+import * as utils from './utils.js'; // Need utils for isWallBetween
 
 let dependencies = {};
 let isTouching = false;
@@ -24,7 +24,7 @@ function addEventListeners() {
         undoButton, clearPathButton, resetLevelButton, restartGameButton,
         pauseButton, nextLevelButton, soundToggleButton,
         modalConfirmRestart, modalCancelRestart, restartModalOverlay,
-        puzzleGridElement
+        puzzleGridElement // Listeners added dynamically
     } = dependencies.elements;
 
     undoButton?.addEventListener('click', handleUndo);
@@ -71,7 +71,6 @@ function handleResetLevel() {
 }
 
 function handleRestartGame() {
-    // Removed the pause logic here
     logic.requestRestartGame();
 }
 
@@ -103,10 +102,11 @@ function handleOverlayClick(event) {
 }
 
 export function handleMouseDown(e) {
-    const { isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath } = getState();
+    const { isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath, wallPositions } = getState();
     if (isGameOver || isGenerating || isPaused || isAnimatingClick) return;
 
     const cell = e.target.closest('.cell');
+    // No obstacle class check needed now
     if (!cell) return;
 
     const value = parseInt(cell.dataset.value) || null;
@@ -132,6 +132,16 @@ export function handleMouseDown(e) {
     }
 
     if (!isPathEmpty && utils.isNeighbor(lastCell, cell) && !cell.classList.contains('selected')) {
+        // Check for wall before handling click
+        const r1 = parseInt(lastCell.dataset.row);
+        const c1 = parseInt(lastCell.dataset.col);
+        const r2 = parseInt(cell.dataset.row);
+        const c2 = parseInt(cell.dataset.col);
+        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+            audio.playSound('soundError');
+            ui.showMessage("Cannot cross a wall.", null, true);
+            return;
+        }
         handleAdjacentClick(cell, value); // This handles button update via addStep(true)
         return;
     }
@@ -173,6 +183,7 @@ function stopDrawing() {
 
 function handleAdjacentClick(cell, value) {
     const { expectedNextValue } = getState();
+    // Wall check already done in handleMouseDown
     const isValidMove = (value === expectedNextValue) || (value === null);
     if (isValidMove) {
         // addStep(true,...) handles button state update after animation
@@ -184,7 +195,7 @@ function handleAdjacentClick(cell, value) {
 }
 
 export function handleMouseMove(e) {
-    const { isDrawing, isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath, currentPuzzle, calculatedCellSize } = getState();
+    const { isDrawing, isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath, currentPuzzle, calculatedCellSize, wallPositions } = getState();
     if (!isDrawing || isGameOver || isGenerating || isPaused || isAnimatingClick) return;
 
     const coords = utils.getRelativeCoords(e, dependencies.elements.puzzleGridElement);
@@ -193,16 +204,25 @@ export function handleMouseMove(e) {
     const col = Math.floor(coords.x / calculatedCellSize);
     const row = Math.floor(coords.y / calculatedCellSize);
 
-    if (!utils.isValid(row, col)) return;
+    if (!utils.isValid(row, col)) return; // Check grid bounds
     const currentCell = currentPuzzle?.[row]?.[col];
-    if (!currentCell) return;
+    if (!currentCell) return; // Should not happen if bounds check passes
 
     const lastPathStep = currentPath.length > 0 ? currentPath[currentPath.length - 1] : null;
     const lastCell = lastPathStep?.cell;
 
-    if (!lastCell || currentCell === lastCell) return;
+    if (!lastCell || currentCell === lastCell) return; // No change needed
 
     if (currentPath.length > 1 && currentCell === currentPath[currentPath.length - 2].cell) {
+        // Moving back - check if wall exists between current last and the one before it (where we are returning to)
+        const r1 = parseInt(lastCell.dataset.row);
+        const c1 = parseInt(lastCell.dataset.col);
+        const r2 = parseInt(currentCell.dataset.row);
+        const c2 = parseInt(currentCell.dataset.col);
+        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+            // Technically shouldn't be possible to have drawn across it, but check anyway
+            return;
+        }
         // undoLastStep(true) does NOT update buttons
         logic.undoLastStep(true);
         if (getState().currentPath.length > 0) {
@@ -211,6 +231,16 @@ export function handleMouseMove(e) {
             ui.updateTempLineEnd(coords); // Re-align end point after undo
         }
     } else if (!currentCell.classList.contains('selected') && utils.isNeighbor(lastCell, currentCell)) {
+        // Moving forward to a new neighbor - CHECK FOR WALL
+        const r1 = parseInt(lastCell.dataset.row);
+        const c1 = parseInt(lastCell.dataset.col);
+        const r2 = parseInt(currentCell.dataset.row);
+        const c2 = parseInt(currentCell.dataset.col);
+        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+            // Do not add step if wall blocks path
+            return;
+        }
+
         const currentValue = parseInt(currentCell.dataset.value) || null;
         const { expectedNextValue } = getState();
         const isValidMove = (currentValue === expectedNextValue) || (currentValue === null);
@@ -221,15 +251,17 @@ export function handleMouseMove(e) {
             ui.updateTempLineStart(currentCell);
             ui.updateTempLineEnd(coords); // Re-align end point after adding
         }
+        // If sequence is invalid during drag, do nothing (don't add step)
     }
 }
 
 function handleMouseUp() {
-    const { isDrawing, isGameOver, isPaused, isAnimatingClick, currentPath, gridRows, gridCols } = getState();
+    const { isDrawing, isGameOver, isPaused, isAnimatingClick, currentPath, gridRows, gridCols } = getState(); // Removed wallPositions from here
     if (isDrawing) {
         stopDrawing();
         // Check win AFTER stopping draw, only if not paused/animating
-        if (!isGameOver && !isPaused && !isAnimatingClick && currentPath.length === (gridRows * gridCols)) {
+        const targetPathLength = (gridRows * gridCols); // Win is always full grid now
+        if (!isGameOver && !isPaused && !isAnimatingClick && currentPath.length === targetPathLength) {
             logic.checkWinCondition(); // This updates buttons on win/loss
         }
         // Always update buttons after drawing stops if not game over
@@ -246,10 +278,11 @@ export function handleTouchStart(e) {
     const touch = e.touches[0];
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     const cell = targetElement?.closest('.cell');
+
     if (cell) {
         isTouching = true;
         const simulatedEvent = { target: cell, clientX: touch.clientX, clientY: touch.clientY };
-        handleMouseDown(simulatedEvent);
+        handleMouseDown(simulatedEvent); // Pass simulated event
     } else {
         isTouching = false;
     }
@@ -263,10 +296,7 @@ function handleTouchMove(e) {
         e.preventDefault();
     }
     const touch = e.touches[0];
-    // Use document.elementFromPoint to find the element under the touch
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    // Create a simulated mouse event to pass to handleMouseMove
-    // Ensure target is correctly passed if needed by handleMouseMove logic (currently uses coordinates mostly)
     const simulatedEvent = { target: targetElement, clientX: touch.clientX, clientY: touch.clientY };
     handleMouseMove(simulatedEvent);
 }

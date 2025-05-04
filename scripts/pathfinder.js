@@ -23,19 +23,22 @@ function shuffle(arr) {
     return arr;
 }
 
+// Standard Hamiltonian pathfinding without obstacles/walls
 function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
     const cellKey = `${r}-${c}`;
     path.push(cellKey);
     visited.add(cellKey);
 
-    const totalCells = gridRows * gridCols;
+    const totalCells = gridRows * gridCols; // Target is always total cells now
     if (path.length === totalCells) {
         return path;
     }
 
+    // Get all valid grid neighbors
     const neighbors = getNeighbors(r, c, gridRows, gridCols);
     const validNeighbors = neighbors.filter(([nr, nc]) => !visited.has(`${nr}-${nc}`));
 
+    // Heuristic scoring (Warnsdorff's rule adaptation)
     const neighborsWithScores = validNeighbors.map(([nr, nc]) => {
         const onwardMoves = getNeighbors(nr, nc, gridRows, gridCols)
             .filter(([nnr, nnc]) => !visited.has(`${nnr}-${nnc}`)).length;
@@ -53,6 +56,7 @@ function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
         }
     }
 
+    // Backtrack
     path.pop();
     visited.delete(cellKey);
     return null;
@@ -60,6 +64,7 @@ function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
 
 
 self.onmessage = function (event) {
+    // No longer needs obstaclePositions
     const { gridRows, gridCols, maxAttempts } = event.data;
 
     if (gridRows === undefined || gridCols === undefined || !maxAttempts) {
@@ -71,10 +76,12 @@ self.onmessage = function (event) {
     let hamiltonianPath = null;
     let attempts = 0;
     let messagePosted = false;
+    const targetPathLength = gridRows * gridCols; // Target is full grid
 
     try {
         while (!hamiltonianPath && attempts < maxAttempts) {
             attempts++;
+            // Standard random start
             const startRow = Math.floor(Math.random() * gridRows);
             const startCol = Math.floor(Math.random() * gridCols);
             const visited = new Set();

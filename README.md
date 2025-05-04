@@ -1,6 +1,6 @@
 # <img src="assets/logo.png" width="35"/> Zip-It! Puzzle Game
 
-A challenging, responsive, web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
+A challenging, responsive, web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, respecting walls between cells, and finishing precisely on the last number.
 
 Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
@@ -8,17 +8,18 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
 1.  **Start:** Click/Tap on the cell containing '1'. This selects the first cell.
 2.  **Draw/Select:**
-    *   **Drag:** Click/Tap and hold on the last cell in the path, then drag your mouse/finger to adjacent (up, down, left, right) cells to extend the path.
-    *   **Click:** Alternatively, click/tap an adjacent, unselected cell to add it to the path. Clicking/tapping the second-to-last cell in the path removes the last step (undo).
-3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells can be traversed freely between numbers.
-4.  **Fill & End:** After connecting the highest number for the level, continue until *all* cells are filled. The path *must end* on the highest numbered cell.
-5.  **Goal:** Complete the path covering all cells, following the number sequence, ending correctly, before the timer runs out.
-6.  **Controls:**
-    *   **Drawing/Selecting:** Click/Tap and drag from the last cell OR click/tap adjacent cells. Click/Tap the *second-to-last* cell in the path to undo the last step.
+    *   **Drag:** Click/Tap and hold on the last cell in the path, then drag your mouse/finger to adjacent (up, down, left, right) cells to extend the path, provided there isn't a wall blocking the way.
+    *   **Click:** Alternatively, click/tap an adjacent, unselected cell to add it to the path, provided there isn't a wall between the last cell and the clicked cell. Clicking/tapping the second-to-last cell in the path removes the last step (undo).
+3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells can be traversed freely between numbers, respecting walls.
+4.  **Walls:** Thick lines between cells are walls and cannot be crossed by the path.
+5.  **Fill & End:** After connecting the highest number for the level, continue until *all* cells are filled. The path *must end* on the highest numbered cell.
+6.  **Goal:** Complete the path covering all cells, following the number sequence, without crossing walls, ending correctly, before the timer runs out.
+7.  **Controls:**
+    *   **Drawing/Selecting:** Click/Tap and drag from the last cell OR click/tap adjacent cells. Movement is blocked by walls. Click/Tap the *second-to-last* cell in the path to undo the last step.
     *   **Undo Button:** Removes the last path segment (cannot be used while drawing or paused).
     *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused).
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
-    *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0 and starts the new game immediately (does not pause).
+    *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0 and starts the new game immediately.
     *   **Pause/Continue:** Pauses the timer and saves the game state. Click again to resume. Game also auto-pauses if you switch browser tabs or minimize the window. A visual overlay indicates the paused state.
     *   **Next Level:** Appears only after completing a level successfully.
     *   **Sound: On/Off:** Toggles game sound effects. Preference is saved.
@@ -27,25 +28,25 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
 *   Challenging path-drawing puzzle connecting numbers sequentially.
 *   Supports both drag-and-draw and click-to-select path creation.
+*   **Walls:** Introduces walls between cells that block path movement (replaces cell obstacles).
 *   Requires complete grid coverage and ending on the final number.
-*   **Guaranteed solvable levels** using Hamiltonian path generation.
+*   **Guaranteed solvable levels:** Generates a valid path first, then adds walls that don't block that specific path.
 *   **Asynchronous level generation** prevents UI freezes (using Web Workers).
-*   Progressive difficulty across levels with updated rules (up to 10x10 grid, 20 numbers max).
-*   Timed challenge per level with **Pause/Continue** functionality & auto-pause.
-*   Scoring system: Points awarded for level completion + time bonus; **penalty for resetting level (-10)**.
-*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout, path progress, and pause state locally. Resume exactly where you left off. *Note: If time runs out during active play, saved progress resets to Level 1 / Points 0 upon next load.*
+*   Progressive difficulty across levels (grid size, numbers, wall count).
+*   Timed challenge per level with **Pause/Continue** & auto-pause.
+*   Scoring system: Points for level completion + time bonus; penalty for resetting.
+*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout (including walls), path progress, and pause state locally.
 *   Sound effects toggle with saved preference.
 *   Undo (button and click-back) and Clear Path functionality.
-*   Clear visual feedback (path lines scale with grid size).
+*   Clear visual feedback (path lines scale, distinct walls).
 *   Restart confirmation modal.
-*   **Responsive design** adapting grid size, UI elements, and font sizes.
+*   **Responsive design**.
 *   Touch controls supported.
-*   **Refined Messaging:** Non-critical messages are debounced.
-*   **Pause Overlay:** Displays a message and blurs the grid when paused (now correctly shown when loading a paused game).
-*   **Modular Codebase:** JavaScript code organized into ES6 modules for better maintainability.
-*   **Organized File Structure:** Code, styles, and assets are placed in dedicated directories.
-*   Smoother UI: Fixed button flickering during path drawing.
-*   Improved Restart Flow: Restarting the game no longer pauses unnecessarily.
+*   **Refined Messaging**.
+*   **Pause Overlay**.
+*   **Modular Codebase**.
+*   **Organized File Structure**.
+*   Smoother UI & Restart Flow.
 
 ## Scoring Logic (Points)
 
@@ -59,28 +60,29 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
 Difficulty progresses based on level thresholds (summary):
 
-| Levels    | Grid Size | xCells (Max 20) | Base Cell Size | Time Addition |
-| :-------- | :-------- | :-------------- | :------------- | :------------ |
-| 1-10      | 4x4       | 5               | 70px           | +0s           |
-| 11-20     | 4x4       | 6               | 70px           | +0s           |
-| 21-40     | 5x5       | 7-8             | 65px           | +5s           |
-| 41-60     | 5x5       | 8-9             | 65px           | +5s           |
-| 61-80     | 6x6       | 9-10            | 60px           | +10s          |
-| 81-100    | 6x6       | 10-11           | 60px           | +10s          |
-| 101-120   | 7x7       | 11-12           | 56px           | +15s          |
-| 121-140   | 7x7       | 12-13           | 56px           | +15s          |
-| 141-160   | 7x8       | 13-14           | 55px           | +20s          |
-| 161-180   | 7x8       | 14-15           | 55px           | +20s          |
-| 181-200   | 8x8       | 15-16           | 54px           | +25s          |
-| 201-220   | 8x8       | 16-17           | 54px           | +25s          |
-| 221-240   | 8x9       | 17-18           | 53px           | +30s          |
-| 241-260   | 8x9       | 18-19           | 53px           | +30s          |
-| 261-280   | 9x9       | 19-20           | 52px           | +35s          |
-| 281-300   | 9x9       | 20              | 52px           | +35s          |
-| 301+      | 10x10     | 20              | 52px           | +50s          |
+| Levels    | Grid Size | xCells (Max 20) | Walls     | Base Cell Size | Time Addition |
+| :-------- | :-------- | :-------------- | :-------- | :------------- | :------------ |
+| 1-10      | 4x4       | 5               | 0         | 70px           | +0s           |
+| 11-20     | 4x4       | 6               | 1         | 70px           | +0s           |
+| 21-40     | 5x5       | 7-8             | 2         | 65px           | +5s           |
+| 41-60     | 5x5       | 8-9             | 3         | 65px           | +5s           |
+| 61-80     | 6x6       | 9-10            | 4         | 60px           | +10s          |
+| 81-100    | 6x6       | 10-11           | 5         | 60px           | +10s          |
+| 101-120   | 7x7       | 11-12           | 6         | 56px           | +15s          |
+| 121-140   | 7x7       | 12-13           | 8         | 56px           | +15s          |
+| 141-160   | 7x8       | 13-14           | 10        | 55px           | +20s          |
+| 161-180   | 7x8       | 14-15           | 12        | 55px           | +20s          |
+| 181-200   | 8x8       | 15-16           | 15        | 54px           | +25s          |
+| 201-220   | 8x8       | 16-17           | 18        | 54px           | +25s          |
+| 221-240   | 8x9       | 17-18           | 21        | 53px           | +30s          |
+| 241-260   | 8x9       | 18-19           | 24        | 53px           | +30s          |
+| 261-280   | 9x9       | 19-20           | 28        | 52px           | +35s          |
+| 281-300   | 9x9       | 20              | 32        | 52px           | +35s          |
+| 301+      | 10x10     | 20              | 40        | 52px           | +50s          |
 
 *   **Actual Cell Size:** Dynamically calculated based on screen size, up to the Base Cell Size (min 35px).
 *   **Total Time Limit:** `60 seconds + Time Addition`
+*   **Wall Count:** Caps apply based on grid size and ensuring the generated path remains possible.
 
 ## Setup
 
@@ -117,7 +119,6 @@ Difficulty progresses based on level thresholds (summary):
 
 ## Future Enhancements Potential
 
-*   **Obstacles:** Adding walls or blocked cells.
 *   Visual themes.
 *   High score board display.
 *   Tutorial mode.

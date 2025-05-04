@@ -53,7 +53,8 @@ export function updatePauseButton(isPaused) {
     }
 }
 
-export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, inputHandlers) {
+// Updated signature: using wallPositions
+export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallPositions, inputHandlers) {
     elements.puzzleGridElement.innerHTML = '';
     elements.numbersSvgElement.innerHTML = '';
     setSvgElements({});
@@ -73,9 +74,20 @@ export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, input
             cell.dataset.value = numberPositions[cellKey] || '';
             cell.style.width = `${cellSize}px`;
             cell.style.height = `${cellSize}px`;
+
+            // Add wall classes based on wallPositions
+            if (wallPositions.has(`H_${r}_${c}`)) { // Horizontal wall below this cell
+                cell.classList.add('wall-below');
+            }
+            if (wallPositions.has(`V_${r}_${c}`)) { // Vertical wall right of this cell
+                cell.classList.add('wall-right');
+            }
+
+            // Add listeners to ALL cells (input handler will check walls)
             cell.addEventListener('mousemove', inputHandlers.handleMouseMove);
             cell.addEventListener('mousedown', inputHandlers.handleMouseDown);
             cell.addEventListener('touchstart', inputHandlers.handleTouchStart, { passive: true });
+
             tempGrid[r][c] = cell;
             elements.puzzleGridElement.appendChild(cell);
         }
@@ -124,13 +136,14 @@ export function clearSvgPath() {
 export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
     elements.numbersSvgElement.innerHTML = '';
     const newSvgElements = {};
-    const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275));
-    const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28));
+    const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275)); // Preserved manual change
+    const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28)); // Preserved manual change
 
     for (const cellKey in numberPositions) {
         const value = numberPositions[cellKey];
         const [r, c] = cellKey.split('-').map(Number);
         const cellElement = puzzleGrid?.[r]?.[c];
+        // No need to check for obstacles now
         if (!cellElement) continue;
 
         const center = getCellCenter(cellElement, elements.puzzleGridElement);
@@ -181,10 +194,12 @@ export function showGenerationErrorText(message) {
 
 
 export function updateButtonStates(state) {
-    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue } = state;
+    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue } = state; // Removed wallPositions
     const canInteract = !isGameOver && !isGenerating && !isPaused && !isAnimatingClick;
     const canPause = !isGameOver && !isGenerating;
-    const isGameWon = isGameOver && currentPath.length === (gridRows * gridCols) && expectedNextValue > xCells;
+    // Win condition is always full grid coverage now
+    const targetPathLength = gridRows * gridCols;
+    const isGameWon = isGameOver && currentPath.length === targetPathLength && expectedNextValue > xCells;
 
     elements.undoButton.disabled = !canInteract || currentPath.length <= 0;
     elements.clearPathButton.disabled = !canInteract || currentPath.length === 0;

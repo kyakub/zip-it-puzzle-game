@@ -95,31 +95,32 @@ h1 {
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 20px;
-    border-radius: 24px;
+    border-radius: 10px;
     overflow: hidden;
+    border: 2px solid #333;
 }
 
 .puzzle-grid {
     display: grid;
     gap: 0;
     position: relative;
-    border: 3px solid #555;
-    border-radius: 24px;
     background-color: #fff;
     min-height: 100px;
     min-width: 100px;
     width: min-content;
     height: min-content;
     transition: filter 0.3s ease;
-    overflow: hidden;
     z-index: 1;
+    margin: -1px 0 0 -1px;
 }
+
 
 .puzzle-grid.paused {
     filter: blur(10px);
 }
 
 .cell {
+    /* Default thin border */
     border: 1px solid #ccc;
     text-align: center;
     display: flex;
@@ -131,11 +132,50 @@ h1 {
     transition: background-color 0.1s ease;
     font-weight: bold;
     z-index: 2;
+    background-color: #ffffff;
+    /* Remove specific borders that will be replaced by walls */
+    border-right: none;
+    border-bottom: none;
+    /* Add back top and left borders */
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
 }
+
+/* Ensure the last column has a right border */
+.puzzle-grid[style*="grid-template-columns: repeat("] .cell:nth-child(1n) {
+    /* This needs to be dynamic based on gridCols, complex in pure CSS */
+    /* Let's rely on the outer grid border for now, or use JS to add a class to last column cells */
+    /* Alternative: Add padding to puzzle-grid and draw all borders */
+}
+
+/* Ensure the last row has a bottom border */
+.puzzle-grid[style*="grid-template-rows: repeat("] .cell:nth-last-child(-n +
+
+    /* gridCols */
+) {
+    /* Needs JS to add class to last row cells */
+    /* Alternative: Rely on outer border */
+}
+
 
 .cell.selected {
     background-color: #a0e0a0;
 }
+
+/* Wall Styling */
+/* Draw thicker bottom border */
+.cell.wall-below {
+    border-bottom: 3px solid #333 !important;
+    /* Use important to override default if needed */
+    /* margin-bottom: -2px; /* Prevent layout shift - might need adjustment */
+}
+
+/* Draw thicker right border */
+.cell.wall-right {
+    border-right: 3px solid #333 !important;
+    /* margin-right: -2px; /* Prevent layout shift - might need adjustment */
+}
+
 
 .path-svg {
     position: absolute;
@@ -579,5 +619,14 @@ button:focus {
 
     .pause-overlay {
         font-size: 1.1em;
+    }
+
+    /* Make walls slightly thinner on small screens */
+    .cell.wall-below {
+        border-bottom-width: 2px;
+    }
+
+    .cell.wall-right {
+        border-right-width: 2px;
     }
 }
