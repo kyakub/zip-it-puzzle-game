@@ -1,16 +1,19 @@
-# <img src="assets/logo.png" width="35"/> Zip-IT Puzzle Game
+# <img src="assets/logo.png" width="35"/> Zip-It! Puzzle Game
 
 A challenging, responsive, web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
 
 ## How to Play
 
-1.  **Start:** Click/Tap and hold on the cell containing '1'.
-2.  **Draw:** Drag your mouse/finger to adjacent (up, down, left, right) cells.
+1.  **Start:** Click/Tap on the cell containing '1'. This selects the first cell.
+2.  **Draw/Select:**
+    *   **Drag:** Click/Tap and hold on the last cell in the path, then drag your mouse/finger to adjacent (up, down, left, right) cells to extend the path.
+    *   **Click:** Alternatively, click/tap an adjacent, unselected cell to add it to the path. Clicking/tapping the second-to-last cell in the path removes the last step (undo).
 3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells can be traversed freely between numbers.
 4.  **Fill & End:** After connecting the highest number for the level, continue until *all* cells are filled. The path *must end* on the highest numbered cell.
 5.  **Goal:** Complete the path covering all cells, following the number sequence, ending correctly, before the timer runs out.
 6.  **Controls:**
-    *   **Undo:** Removes the last path segment (cannot be used while drawing or paused).
+    *   **Drawing/Selecting:** Click/Tap and drag from the last cell OR click/tap adjacent cells. Click/Tap the *second-to-last* cell in the path to undo the last step.
+    *   **Undo Button:** Removes the last path segment (cannot be used while drawing or paused).
     *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused).
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
     *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0. Pauses game first if active.
@@ -21,6 +24,7 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 ## Features
 
 *   Challenging path-drawing puzzle connecting numbers sequentially.
+*   Supports both drag-and-draw and click-to-select path creation.
 *   Requires complete grid coverage and ending on the final number.
 *   **Guaranteed solvable levels** using Hamiltonian path generation.
 *   **Asynchronous level generation** prevents UI freezes (using Web Workers).
@@ -29,7 +33,7 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 *   Scoring system: Points awarded for level completion + time bonus; **penalty for resetting level (-10)**.
 *   **Full Game State Persistence:** Saves level, points, timer, puzzle layout, path progress, and pause state locally. Resume exactly where you left off. *Note: If time runs out during active play, saved progress resets to Level 1 / Points 0 upon next load.*
 *   Sound effects toggle with saved preference.
-*   Undo and Clear Path functionality.
+*   Undo (button and click-back) and Clear Path functionality.
 *   Clear visual feedback (path lines scale with grid size).
 *   Restart confirmation modal.
 *   **Responsive design** adapting grid size, UI elements, and font sizes.
