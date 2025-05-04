@@ -1,5 +1,3 @@
-// --- pathfinder.js ---
-
 function isValid(r, c, gridRows, gridCols) {
     return r >= 0 && r < gridRows && c >= 0 && c < gridCols;
 }
@@ -10,7 +8,7 @@ function getNeighbors(r, c, gridRows, gridCols) {
     for (const [dr, dc] of directions) {
         const nr = r + dr;
         const nc = c + dc;
-        if (isValid(nr, nc, gridRows, gridCols)) { // Pass dimensions
+        if (isValid(nr, nc, gridRows, gridCols)) {
             neighbors.push([nr, nc]);
         }
     }
@@ -25,22 +23,20 @@ function shuffle(arr) {
     return arr;
 }
 
-// --- Hamiltonian Path Finder (Backtracking + Warnsdorff Heuristic) ---
 function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
     const cellKey = `${r}-${c}`;
     path.push(cellKey);
     visited.add(cellKey);
 
-    const totalCells = gridRows * gridCols; // Use dimensions
+    const totalCells = gridRows * gridCols;
     if (path.length === totalCells) {
         return path;
     }
 
-    const neighbors = getNeighbors(r, c, gridRows, gridCols); // Pass dimensions
+    const neighbors = getNeighbors(r, c, gridRows, gridCols);
     const validNeighbors = neighbors.filter(([nr, nc]) => !visited.has(`${nr}-${nc}`));
 
     const neighborsWithScores = validNeighbors.map(([nr, nc]) => {
-        // Pass dimensions to inner getNeighbors
         const onwardMoves = getNeighbors(nr, nc, gridRows, gridCols)
             .filter(([nnr, nnc]) => !visited.has(`${nnr}-${nnc}`)).length;
         return { coords: [nr, nc], score: onwardMoves };
@@ -50,7 +46,6 @@ function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
 
     for (const { coords: [nr, nc] } of neighborsWithScores) {
         if (!visited.has(`${nr}-${nc}`)) {
-            // Pass dimensions recursively
             const result = findHamiltonianPath(nr, nc, path, visited, gridRows, gridCols);
             if (result) {
                 return result;
@@ -64,10 +59,7 @@ function findHamiltonianPath(r, c, path, visited, gridRows, gridCols) {
 }
 
 
-// --- Worker Message Handler ---
 self.onmessage = function (event) {
-    console.log('Worker: Message received:', event.data);
-    // Expect gridRows and gridCols now
     const { gridRows, gridCols, maxAttempts } = event.data;
 
     if (gridRows === undefined || gridCols === undefined || !maxAttempts) {
@@ -81,29 +73,20 @@ self.onmessage = function (event) {
     let messagePosted = false;
 
     try {
-        console.log(`Worker: Starting path search for ${gridRows}x${gridCols} (max ${maxAttempts} attempts).`);
-        const startTime = performance.now();
-
         while (!hamiltonianPath && attempts < maxAttempts) {
             attempts++;
-            const startRow = Math.floor(Math.random() * gridRows); // Use gridRows
-            const startCol = Math.floor(Math.random() * gridCols); // Use gridCols
+            const startRow = Math.floor(Math.random() * gridRows);
+            const startCol = Math.floor(Math.random() * gridCols);
             const visited = new Set();
-            // Pass dimensions to finder
             hamiltonianPath = findHamiltonianPath(startRow, startCol, [], visited, gridRows, gridCols);
         }
 
-        const endTime = performance.now();
-        const duration = ((endTime - startTime) / 1000).toFixed(2);
-        console.log(`Worker: Search finished in ${duration}s after ${attempts} attempts.`);
-
         if (hamiltonianPath) {
-            console.log("Worker: Path Found.");
-            self.postMessage({ success: true, path: hamiltonianPath, attempts: attempts, duration: duration });
+            self.postMessage({ success: true, path: hamiltonianPath });
             messagePosted = true;
         } else {
-            console.warn(`Worker: Failed to find Path after ${attempts} attempts.`);
-            self.postMessage({ success: false, reason: 'Max attempts reached', attempts: attempts, duration: duration });
+            console.warn(`Worker: Failed to find Path after ${attempts} attempts for ${gridRows}x${gridCols}.`);
+            self.postMessage({ success: false, reason: 'Max attempts reached' });
             messagePosted = true;
         }
     } catch (err) {
@@ -117,5 +100,3 @@ self.onmessage = function (event) {
 self.onerror = function (event) {
     console.error('Worker: Uncaught error:', event.message, event);
 };
-
-console.log("Worker: pathfinder.js loaded.");

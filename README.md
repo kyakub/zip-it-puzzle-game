@@ -1,74 +1,86 @@
-# <img src="assets/logo.png" width="50"/> Zip-IT Puzzle Game
+# <img src="assets/logo.png" width="35"/> Zip-IT Puzzle Game
 
-A challenging web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
+A challenging, responsive, web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
 
 ## How to Play
 
-1.  **Start:** Click and hold (or tap and hold) on the cell containing the number '1'. A path can only begin here.
-2.  **Draw:** Drag your mouse (or finger) to adjacent (up, down, left, right) cells to draw a path.
-3.  **Sequence:** You must enter cells containing numbers in ascending order (1 -> 2 -> 3...). You can traverse empty cells freely between numbers.
-4.  **Fill & End:** After connecting the highest number for the level, continue drawing the path until *all* remaining empty cells in the grid are filled. The path *must end* on the cell containing the highest number for the level.
-5.  **Goal:** Successfully draw a single, continuous path that starts at '1', visits all numbered cells in sequence, covers every cell in the grid, ends on the highest number, and is completed before the time runs out.
+1.  **Start:** Click/Tap and hold on the cell containing '1'.
+2.  **Draw:** Drag your mouse/finger to adjacent (up, down, left, right) cells.
+3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells can be traversed freely between numbers.
+4.  **Fill & End:** After connecting the highest number for the level, continue until *all* cells are filled. The path *must end* on the highest numbered cell.
+5.  **Goal:** Complete the path covering all cells, following the number sequence, ending correctly, before the timer runs out.
 6.  **Controls:**
-    *   **Undo:** Removes the last segment of your current path. Can be used multiple times, but not while actively drawing.
-    *   **Reset Level:** Restarts the *current* level attempt with a fresh grid and resets the timer. Your score and level number are kept.
-    *   **Restart Game:** Shows a confirmation prompt. If confirmed, resets the entire game back to Level 1 and sets the score to 0. Your progress is saved at Level 1 / Score 0.
-    *   **Next Level:** Appears only after successfully completing a level, allowing you to proceed.
+    *   **Undo:** Removes the last path segment (cannot be used while drawing or paused).
+    *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused).
+    *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
+    *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0. Pauses game first if active.
+    *   **Pause/Continue:** Pauses the timer, saves the game state, and deducts **100 points** (cannot pause if points < 100). Click again to resume. Game also auto-pauses (without penalty) if you switch browser tabs or minimize the window.
+    *   **Next Level:** Appears only after completing a level successfully.
+    *   **Sound: On/Off:** Toggles game sound effects. Preference is saved.
 
 ## Features
 
-*   Challenging path-drawing puzzle connecting numbers in sequence.
+*   Challenging path-drawing puzzle connecting numbers sequentially.
 *   Requires complete grid coverage and ending on the final number.
 *   **Guaranteed solvable levels** using Hamiltonian path generation.
-*   **Asynchronous level generation** prevents UI freezes on complex levels (using Web Workers).
-*   Progressive difficulty across levels with updated rules.
-*   Timed challenge for each level.
-*   Scoring system with time bonus.
-*   Game progress (score and current level) saved in `localStorage`.
-*   Sound effects for feedback.
-*   Undo functionality.
-*   Clear visual feedback for path and selected cells (lines are now thicker).
-*   **Restart confirmation modal** to prevent accidental progress loss.
-*   **Responsive touch controls** for mobile/tablet play.
+*   **Asynchronous level generation** prevents UI freezes (using Web Workers).
+*   Progressive difficulty across levels with updated rules (up to 10x10 grid, 20 numbers max).
+*   Timed challenge per level with **Pause/Continue** functionality & auto-pause.
+*   Scoring system: Points awarded for level completion + time bonus; **penalties for resetting level (-10) and pausing (-100)**.
+*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout, path progress, and pause state locally. Resume exactly where you left off. *Note: If time runs out during active play, saved progress resets to Level 1 / Points 0 upon next load.*
+*   Sound effects toggle with saved preference.
+*   Undo and Clear Path functionality.
+*   Clear visual feedback (path lines scale with grid size).
+*   Restart confirmation modal.
+*   **Responsive design** adapting grid size, UI elements, and font sizes.
+*   Touch controls supported.
+*   **Refined Messaging:** Non-critical messages are debounced.
 
-## Scoring Logic
+## Scoring Logic (Points)
 
-Your score increases only when you successfully complete a level. The points awarded are calculated as follows:
-
-*   **Base Level Points:** `Current Level Number * 10` points.
-*   **Time Bonus:** Points equal to the number of seconds remaining on the timer.
-*   **Total Score Increase:** `(Level * 10) + Time Remaining`
-
-The score accumulates across levels and is only reset to 0 when you confirm via the "Restart Game" modal.
+*   **Level Completion:** `Points Increase = (Level * 10) + Time Remaining`
+*   **Reset Level:** `Points Change = -10` (Cannot reset if Level > 1 and Points < 10. Points cannot go below 0).
+*   **Pause Game:** `Points Change = -100` (Applied when clicking Pause button. Cannot pause if Points < 100. Points cannot go below 0).
+*   **Restart Game:** Points reset to 0.
+*   **Time Out During Play:** Saved Points reset to 0 upon next page load.
 
 ## Level Difficulty Design
 
-Difficulty increases gradually based on the level number:
+Difficulty progresses based on level thresholds (summary):
 
-*   **Grid Size:**
-    *   Starts at 5x5 (Levels 1-15).
-    *   Increases by 1 (e.g., 5x5 -> 6x6) every 15 levels.
-    *   Maximum grid size is **8x8** (Reached at Level 46+).
-*   **Numbered Cells (`xCells`):**
-    *   Starts at 5 (Levels 1-10).
-    *   Increases by 1 every 10 levels.
-    *   Maximum numbered cells is **14** (Reached at Level 91+).
-    *   *Constraint:* The number of required cells cannot exceed the total cells available in the current grid size.
-*   **Time Limit:**
-    *   Calculated based on a base time, with adjustments added per level, plus factors for the current grid size and the number of required connections (`xCells`), ensuring more complex levels have proportionally more time.
+| Levels    | Grid Size | xCells (Max 20) | Base Cell Size | Time Addition |
+| :-------- | :-------- | :-------------- | :------------- | :------------ |
+| 1-10      | 4x4       | 5               | 70px           | +0s           |
+| 11-20     | 4x4       | 6               | 70px           | +0s           |
+| 21-40     | 5x5       | 7-8             | 65px           | +5s           |
+| 41-60     | 5x5       | 8-9             | 65px           | +5s           |
+| 61-80     | 6x6       | 9-10            | 60px           | +10s          |
+| 81-100    | 6x6       | 10-11           | 60px           | +10s          |
+| 101-120   | 7x7       | 11-12           | 56px           | +15s          |
+| 121-140   | 7x7       | 12-13           | 56px           | +15s          |
+| 141-160   | 7x8       | 13-14           | 55px           | +20s          |
+| 161-180   | 7x8       | 14-15           | 55px           | +20s          |
+| 181-200   | 8x8       | 15-16           | 54px           | +25s          |
+| 201-220   | 8x8       | 16-17           | 54px           | +25s          |
+| 221-240   | 8x9       | 17-18           | 53px           | +30s          |
+| 241-260   | 8x9       | 18-19           | 53px           | +30s          |
+| 261-280   | 9x9       | 19-20           | 52px           | +35s          |
+| 281-300   | 9x9       | 20              | 52px           | +35s          |
+| 301+      | 10x10     | 20              | 52px           | +50s          |
 
-This progression aims for a steady challenge curve as players advance.
+*   **Actual Cell Size:** Dynamically calculated based on screen size, up to the Base Cell Size (min 35px).
+*   **Total Time Limit:** `60 seconds + Time Addition`
 
 ## Setup
 
 1.  Clone or download this repository.
-2.  Ensure you have the following file structure:
+2.  Ensure the following file structure:
     ```
     your-project-folder/
     ├── index.html
     ├── script.js
     ├── style.css
-    ├── pathfinder.js  <-- Web Worker script
+    ├── pathfinder.js     # Web Worker
     └── assets/
         ├── logo.png
         ├── favicon.png
@@ -77,13 +89,12 @@ This progression aims for a steady challenge curve as players advance.
         ├── win.mp3
         └── lose.mp3
     ```
-3.  Make sure all required images and sound files are present in the `assets/` folder.
-4.  Open `index.html` in a modern web browser that supports Web Workers.
+3.  Verify all required assets are present in the `assets/` folder.
+4.  Open `index.html` in a modern web browser supporting Web Workers and `localStorage`.
 
 ## Future Enhancements Potential
 
-*   **Obstacles:** Adding walls or blocked cells to the grid for increased complexity.
+*   **Obstacles:** Adding walls or blocked cells.
 *   Visual themes.
 *   High score board display.
-*   Tutorial mode for first-time players.
-*   More varied level progression rules or special level types.
+*   Tutorial mode.

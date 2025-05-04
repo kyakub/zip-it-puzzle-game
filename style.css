@@ -13,7 +13,7 @@ body {
     align-items: center;
     min-height: 100vh;
     flex-direction: column;
-    padding: 20px;
+    padding: 10px;
 }
 
 .game-container {
@@ -21,10 +21,11 @@ body {
     flex-direction: column;
     align-items: center;
     background-color: #fff;
-    padding: 30px;
+    padding: 35px 15px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 90vw;
+    width: 100%;
+    max-width: 700px;
     position: relative;
     z-index: 1;
 }
@@ -35,66 +36,77 @@ body {
     align-items: center;
     justify-content: center;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .logo {
     display: flex;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     align-items: center;
     flex-direction: row;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .logo img {
-    width: 40px;
+    width: 35px;
     height: auto;
 }
 
 h1 {
     margin-left: 0;
-    font-size: 1.8em;
+    font-size: 1.5em;
     color: #333;
+    text-align: center;
 }
 
 .game-info {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     width: 100%;
-    max-width: 500px;
-    margin-bottom: 20px;
-    font-size: 1.1em;
+    max-width: 100%;
+    margin: 10px 0 15px 0;
+    font-size: 1.0em;
     font-weight: bold;
-    gap: 10px;
+    gap: 8px 15px;
+    border-top: solid 1px #cccccc;
+    border-bottom: solid 1px #cccccc;
+    padding: 7px 6px;
+}
+
+.game-info>div {
+    border-right: solid 1px #cccccc;
 }
 
 .game-info .text {
     flex-grow: 1;
     text-align: center;
+    min-width: 80px;
+    white-space: nowrap;
 }
 
 .puzzle-grid {
     display: grid;
     gap: 0;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     position: relative;
     border: 2px solid #555;
     background-color: #fff;
     min-height: 100px;
     min-width: 100px;
     overflow: hidden;
-    /* grid-template-rows/cols set by JS */
+    width: min-content;
+    height: min-content;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .cell {
-    /* width/height set by JS */
     border: 1px solid #ccc;
     text-align: center;
-    font-size: 1.4em;
-    /* Base size, might be slightly adjusted by cell size */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -112,29 +124,23 @@ h1 {
 .cell span {
     z-index: 2;
     background-color: #333;
-    /* Adjust size relative to cell */
-    min-width: calc(var(--cell-size, 60px) * 0.5);
-    /* Example dynamic size */
-    min-height: calc(var(--cell-size, 60px) * 0.5);
-    max-width: 40px;
-    /* Max size */
-    max-height: 40px;
-    /* Max size */
-    width: 60%;
-    /* Percentage based */
-    height: 60%;
+    --cell-size: 70px;
+    width: calc(var(--cell-size) * 0.55);
+    height: calc(var(--cell-size) * 0.55);
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 35px;
+    max-height: 35px;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    font-size: 0.6em;
-    /* Smaller relative font size */
+    font-size: calc(var(--cell-size) * 0.28);
     font-weight: bold;
     color: #fff;
     line-height: 1;
     pointer-events: none;
 }
-
 
 .cell.selected span {
     background-color: #1a5e1a;
@@ -144,35 +150,29 @@ h1 {
     z-index: 1;
     position: absolute;
     pointer-events: none;
-    height: 12px;
     background: #333;
-    border-radius: 6px;
     transform-origin: 0 50%;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    /* width, left, top, transform set by JS */
 }
 
 .buttons {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    /* Allow buttons to wrap on smaller screens */
-    gap: 15px;
-    /* Slightly smaller gap? */
-    margin-top: 20px;
+    gap: 10px;
+    margin-top: 15px;
+    width: 100%;
 }
 
 button {
-    padding: 10px 20px;
-    /* Slightly smaller buttons */
-    font-size: 0.95em;
-    /* Slightly smaller font */
+    padding: 8px 15px;
+    font-size: 0.9em;
     cursor: pointer;
     border: 2px solid #555;
     background-color: white;
     color: #333;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: bold;
 }
 
@@ -201,16 +201,17 @@ button:focus {
 .info-button {
     background: none;
     border: 1px solid #aaa;
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: bold;
     color: #555;
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 5px;
     line-height: 1.2;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    min-width: 90px;
+    min-width: 80px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .info-button:hover {
@@ -224,49 +225,72 @@ button:focus {
     transform: scale(0.98);
 }
 
+.next-level-button {
+    display: none;
+    width: 80%;
+    max-width: 300px;
+    padding: 12px 20px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #fff;
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin: 20px auto 5px auto;
+    text-align: center;
+}
+
+.next-level-button:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.next-level-button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
 .generating-text {
     display: flex;
     flex-direction: column;
-    /* Stack text */
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    font-size: 1.2em;
+    font-size: 1.1em;
     color: #555;
     font-style: italic;
     text-align: center;
     grid-column: 1 / -1;
     grid-row: 1 / -1;
-    padding: 20px;
+    padding: 15px;
     box-sizing: border-box;
     position: absolute;
     top: 0;
     left: 0;
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgba(255, 255, 255, 0.85);
     z-index: 5;
 }
 
-/* --- Message Box Styles --- */
 .message-box {
     display: flex;
     align-items: center;
     background-color: #fff;
     color: #333;
-    font-size: .9em;
+    font-size: .85em;
     border: 1px solid #ccc;
-    border-left: 5px solid #555;
+    border-left: 4px solid #555;
     border-radius: 4px;
-    padding: 10px 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 8px 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     opacity: 0;
     transform: translateX(10px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition: opacity 0.4s ease, transform 0.4s ease, margin-bottom 0.3s ease;
     position: relative;
     z-index: 1000;
     word-wrap: break-word;
-    margin-bottom: 10px;
-    max-width: 300px;
+    margin-bottom: 8px;
+    max-width: 280px;
 }
 
 .message-box.show {
@@ -274,19 +298,26 @@ button:focus {
     transform: translateX(0);
 }
 
+.message-box.hide {
+    opacity: 0;
+    transform: translateX(10px);
+    margin-bottom: -40px;
+    pointer-events: none;
+}
+
 .message-box span {
     flex-grow: 1;
-    margin-right: 10px;
+    margin-right: 8px;
 }
 
 .message-box .close-button {
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     cursor: pointer;
     color: #aaa;
-    padding: 0 5px;
+    padding: 0 4px;
     line-height: 1;
 }
 
@@ -296,15 +327,16 @@ button:focus {
 
 #messageContainer {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    width: auto;
+    max-width: 300px;
 }
 
-/* --- Modal Styles --- */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -318,6 +350,7 @@ button:focus {
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
+    padding: 10px;
 }
 
 .modal-overlay.show {
@@ -327,12 +360,12 @@ button:focus {
 
 .modal {
     background-color: #fff;
-    padding: 25px 35px;
+    padding: 20px 25px;
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
     text-align: center;
     max-width: 400px;
-    width: 90%;
+    width: 95%;
     z-index: 1001;
     transform: scale(0.9);
     transition: transform 0.3s ease;
@@ -345,25 +378,27 @@ button:focus {
 .modal h2 {
     margin-top: 0;
     margin-bottom: 15px;
+    font-size: 1.3em;
     color: #333;
 }
 
 .modal-message {
-    margin-bottom: 25px;
-    font-size: 1.05em;
-    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 1em;
+    line-height: 1.5;
     color: #555;
 }
 
 .modal-buttons {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
 }
 
 .modal-button {
-    padding: 10px 20px;
-    min-width: 80px;
+    padding: 8px 15px;
+    min-width: 70px;
+    font-size: 0.9em;
 }
 
 .modal-button-confirm {
@@ -384,4 +419,69 @@ button:focus {
 .modal-button-cancel:hover:not(:disabled) {
     background-color: #555;
     color: white;
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 5px;
+    }
+
+    .game-container {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.3em;
+    }
+
+    .game-info {
+        padding: 5px 4px;
+        gap: 4px 10px;
+        font-size: 0.9em;
+    }
+
+    .info-button {
+        font-size: 0.8em;
+        padding: 3px 6px;
+        min-width: 70px;
+    }
+
+    .buttons {
+        gap: 8px;
+    }
+
+    button {
+        padding: 6px 12px;
+        font-size: 0.85em;
+    }
+
+    .next-level-button {
+        padding: 10px 15px;
+        font-size: 1em;
+    }
+
+    .modal h2 {
+        font-size: 1.2em;
+    }
+
+    .modal-message {
+        font-size: 0.95em;
+    }
+
+    .modal-button {
+        padding: 6px 12px;
+        min-width: 60px;
+        font-size: 0.85em;
+    }
+
+    #messageContainer {
+        top: 5px;
+        right: 5px;
+        max-width: 240px;
+    }
+
+    .message-box {
+        padding: 6px 10px;
+        font-size: 0.8em;
+    }
 }
