@@ -137,7 +137,6 @@ h1 {
     background-color: #a0e0a0;
 }
 
-/* SVG Path Styles */
 .path-svg {
     position: absolute;
     top: 0;
@@ -155,39 +154,27 @@ h1 {
 }
 
 #gamePath {
-    /* The main, committed path */
     fill: none;
     stroke: #333;
     stroke-width: 35;
-    /* Base width, updated by JS */
     stroke-linecap: round;
     stroke-linejoin: round;
-    /* No transition on the main path */
 }
 
 #tempPathSegment {
-    /* Line used for drag-following */
     fill: none;
     stroke: #333;
     stroke-linecap: round;
     visibility: hidden;
-    /* Hidden by default */
-    /* Stroke width set by JS */
-    /* No transition */
 }
 
 .click-animation-segment {
-    /* Dynamically created line for click animation */
     fill: none;
     stroke: #333;
     stroke-linecap: round;
     transition: stroke-dashoffset 0.1s ease-out;
-    /* CSS animation for click */
-    /* Stroke width set by JS */
 }
 
-
-/* SVG Numbers Styles */
 .numbers-svg {
     position: absolute;
     top: 0;
@@ -561,13 +548,9 @@ button:focus {
         stroke-width: 25;
     }
 
-    #tempPathSegment {
-        /* Stroke width set by JS */
-    }
+    #tempPathSegment {}
 
-    .click-animation-segment {
-        /* Stroke width set by JS */
-    }
+    .click-animation-segment {}
 
     .modal h2 {
         font-size: 1.2em;

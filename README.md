@@ -2,6 +2,8 @@
 
 A challenging, responsive, web-based puzzle game where you must connect numbered cells in sequence, filling the entire grid within the time limit, and finishing precisely on the last number.
 
+Built with HTML, CSS, and modern JavaScript (ES6 Modules).
+
 ## How to Play
 
 1.  **Start:** Click/Tap on the cell containing '1'. This selects the first cell.
@@ -39,7 +41,10 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 *   **Responsive design** adapting grid size, UI elements, and font sizes.
 *   Touch controls supported.
 *   **Refined Messaging:** Non-critical messages are debounced.
-*   **Pause Overlay:** Displays a message and blurs the grid when paused.
+*   **Pause Overlay:** Displays a message and blurs the grid when paused (now correctly shown when loading a paused game).
+*   **Modular Codebase:** JavaScript code organized into ES6 modules for better maintainability.
+*   **Organized File Structure:** Code, styles, and assets are placed in dedicated directories.
+*   Smoother UI: Fixed button flickering during path drawing.
 
 ## Scoring Logic (Points)
 
@@ -83,9 +88,21 @@ Difficulty progresses based on level thresholds (summary):
     ```
     your-project-folder/
     ├── index.html
-    ├── script.js
-    ├── style.css
-    ├── pathfinder.js     # Web Worker
+    ├── styles/
+    │   └── style.css
+    ├── scripts/
+    │   ├── config.js
+    │   ├── state.js
+    │   ├── utils.js
+    │   ├── ui.js
+    │   ├── audio.js
+    │   ├── persistence.js
+    │   ├── timer.js
+    │   ├── levelGenerator.js
+    │   ├── logic.js
+    │   ├── input.js
+    │   ├── main.js           # Main JS entry point
+    │   └── pathfinder.js     # Web Worker
     └── assets/
         ├── logo.png
         ├── favicon.png
@@ -95,7 +112,7 @@ Difficulty progresses based on level thresholds (summary):
         └── lose.mp3
     ```
 3.  Verify all required assets are present in the `assets/` folder.
-4.  Open `index.html` in a modern web browser supporting Web Workers and `localStorage`.
+4.  Open `index.html` in a modern web browser supporting ES6 Modules, Web Workers, and `localStorage`. *(Note: If running locally, you might need a simple local server due to ES6 module security restrictions in some browsers when opened directly via `file:///`)*.
 
 ## Future Enhancements Potential
 
