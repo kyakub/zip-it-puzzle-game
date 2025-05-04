@@ -5,7 +5,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Work Sans", sans-serif;
     background-color: #f0f0f0;
     color: #333;
     display: flex;
@@ -21,7 +21,7 @@ body {
     flex-direction: column;
     align-items: center;
     background-color: #fff;
-    padding: 35px 15px;
+    padding: 35px 0;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     width: 100%;
@@ -74,7 +74,7 @@ h1 {
     gap: 8px 15px;
     border-top: solid 1px #cccccc;
     border-bottom: solid 1px #cccccc;
-    padding: 7px 6px;
+    padding: 10px 15px;
 }
 
 .game-info>div {
@@ -88,21 +88,36 @@ h1 {
     white-space: nowrap;
 }
 
-.puzzle-grid {
-    display: grid;
-    gap: 0;
-    margin-bottom: 20px;
+.puzzle-area {
     position: relative;
-    border: 2px solid #555;
-    background-color: #fff;
-    min-height: 100px;
-    min-width: 100px;
-    overflow: hidden;
     width: min-content;
     height: min-content;
     margin-left: auto;
     margin-right: auto;
+    margin-bottom: 20px;
+    border-radius: 24px;
+    overflow: hidden;
 }
+
+.puzzle-grid {
+    display: grid;
+    gap: 0;
+    position: relative;
+    border: 3px solid #555;
+    border-radius: 24px;
+    background-color: #fff;
+    min-height: 100px;
+    min-width: 100px;
+    width: min-content;
+    height: min-content;
+    transition: filter 0.3s ease;
+    overflow: hidden;
+}
+
+.puzzle-grid.paused {
+    filter: blur(4px);
+}
+
 
 .cell {
     border: 1px solid #ccc;
@@ -116,6 +131,9 @@ h1 {
     transition: background-color 0.1s ease;
     font-weight: bold;
 }
+
+/* Remove specific corner radius rules for cells as container handles clipping */
+
 
 .cell.selected {
     background-color: #a0e0a0;
@@ -200,12 +218,12 @@ button:focus {
 
 .info-button {
     background: none;
-    border: 1px solid #aaa;
+    border: 1px solid #eee;
     font-size: 0.85em;
     font-weight: bold;
     color: #555;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 6px 14px;
     border-radius: 5px;
     line-height: 1.2;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
@@ -216,7 +234,7 @@ button:focus {
 
 .info-button:hover {
     background-color: #eee;
-    border-color: #888;
+    border-color: #eee;
     color: #333;
 }
 
@@ -228,7 +246,7 @@ button:focus {
 .next-level-button {
     display: none;
     width: 80%;
-    max-width: 300px;
+    max-width: 180px;
     padding: 12px 20px;
     font-size: 1.1em;
     font-weight: bold;
@@ -238,7 +256,7 @@ button:focus {
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;
-    margin: 20px auto 5px auto;
+    margin: 5px auto 10px auto;
     text-align: center;
 }
 
@@ -271,6 +289,31 @@ button:focus {
     background-color: rgba(255, 255, 255, 0.85);
     z-index: 5;
 }
+
+.pause-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background-color: rgb(255 255 255 / 60%);
+    color: #333;
+    font-size: 1.2em;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 10;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.pause-overlay.show {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
 
 .message-box {
     display: flex;
@@ -483,5 +526,9 @@ button:focus {
     .message-box {
         padding: 6px 10px;
         font-size: 0.8em;
+    }
+
+    .pause-overlay {
+        font-size: 1.1em;
     }
 }

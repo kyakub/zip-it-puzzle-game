@@ -14,7 +14,7 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
     *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused).
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
     *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0. Pauses game first if active.
-    *   **Pause/Continue:** Pauses the timer, saves the game state, and deducts **100 points** (cannot pause if points < 100). Click again to resume. Game also auto-pauses (without penalty) if you switch browser tabs or minimize the window.
+    *   **Pause/Continue:** Pauses the timer and saves the game state. Click again to resume. Game also auto-pauses if you switch browser tabs or minimize the window. A visual overlay indicates the paused state.
     *   **Next Level:** Appears only after completing a level successfully.
     *   **Sound: On/Off:** Toggles game sound effects. Preference is saved.
 
@@ -26,7 +26,7 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 *   **Asynchronous level generation** prevents UI freezes (using Web Workers).
 *   Progressive difficulty across levels with updated rules (up to 10x10 grid, 20 numbers max).
 *   Timed challenge per level with **Pause/Continue** functionality & auto-pause.
-*   Scoring system: Points awarded for level completion + time bonus; **penalties for resetting level (-10) and pausing (-100)**.
+*   Scoring system: Points awarded for level completion + time bonus; **penalty for resetting level (-10)**.
 *   **Full Game State Persistence:** Saves level, points, timer, puzzle layout, path progress, and pause state locally. Resume exactly where you left off. *Note: If time runs out during active play, saved progress resets to Level 1 / Points 0 upon next load.*
 *   Sound effects toggle with saved preference.
 *   Undo and Clear Path functionality.
@@ -35,12 +35,13 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 *   **Responsive design** adapting grid size, UI elements, and font sizes.
 *   Touch controls supported.
 *   **Refined Messaging:** Non-critical messages are debounced.
+*   **Pause Overlay:** Displays a message and blurs the grid when paused.
 
 ## Scoring Logic (Points)
 
 *   **Level Completion:** `Points Increase = (Level * 10) + Time Remaining`
 *   **Reset Level:** `Points Change = -10` (Cannot reset if Level > 1 and Points < 10. Points cannot go below 0).
-*   **Pause Game:** `Points Change = -100` (Applied when clicking Pause button. Cannot pause if Points < 100. Points cannot go below 0).
+*   **Pause Game:** No points change.
 *   **Restart Game:** Points reset to 0.
 *   **Time Out During Play:** Saved Points reset to 0 upon next page load.
 

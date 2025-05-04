@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zip-IT Puzzle</title>
     <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -24,9 +28,13 @@
             </div>
         </div>
 
-        <div id="puzzleGrid" class="puzzle-grid">
-
+        <div class="puzzle-area">
+            <div id="puzzleGrid" class="puzzle-grid"></div>
+            <div id="pauseOverlay" class="pause-overlay">
+                <span>The game is paused,<br />click <b>"Continue"</b> to resume</span>
+            </div>
         </div>
+
 
         <button id="nextLevelButton" class="next-level-button" style="display: none;">Next Level</button>
 
@@ -44,7 +52,8 @@
     <div id="restartModalOverlay" class="modal-overlay">
         <div id="restartModal" class="modal">
             <h2>Confirm Restart</h2>
-            <p class="modal-message">Warning! Your current game progress (level and points) will be reset. Are you sure you want to restart?</p>
+            <p class="modal-message">Warning! Your current game progress (level and points) will be reset. Are you sure
+                you want to restart?</p>
             <div class="modal-buttons">
                 <button id="modalConfirmRestart" class="modal-button modal-button-confirm">OK</button>
                 <button id="modalCancelRestart" class="modal-button modal-button-cancel">Cancel</button>
