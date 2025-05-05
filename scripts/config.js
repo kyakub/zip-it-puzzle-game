@@ -1,7 +1,7 @@
 export const config = {
     MSG_DISPLAY_TIME: 5000,
     BASE_TIME_LIMIT: 60,
-    MAX_HAMILTONIAN_ATTEMPTS: 25, // Can likely reduce this now path is generated first
+    MAX_HAMILTONIAN_ATTEMPTS: 25,
     MIN_MSG_INTERVAL: 1500,
     MIN_CELL_SIZE: 35,
     MAX_CELL_SIZE: 70,
@@ -13,9 +13,8 @@ export const config = {
     SVG_NS: "http://www.w3.org/2000/svg",
     ANIMATION_DURATION_CLICK: 100,
     LEVEL_PARAMS: [
-        // Replaced numObstacles with numWalls
         { level: 1, rows: 4, cols: 4, xCells: 5, baseCellSize: 70, timeAdd: 0, numWalls: 0 },
-        { level: 11, rows: 4, cols: 4, xCells: 6, baseCellSize: 70, timeAdd: 0, numWalls: 1 }, // Start walls
+        { level: 11, rows: 4, cols: 4, xCells: 6, baseCellSize: 70, timeAdd: 0, numWalls: 1 },
         { level: 21, rows: 5, cols: 5, xCells: 7, baseCellSize: 65, timeAdd: 5, numWalls: 2 },
         { level: 41, rows: 5, cols: 5, xCells: 8, baseCellSize: 65, timeAdd: 5, numWalls: 3 },
         { level: 61, rows: 6, cols: 6, xCells: 9, baseCellSize: 60, timeAdd: 10, numWalls: 4 },
@@ -33,7 +32,11 @@ export const config = {
         { level: 301, rows: 10, cols: 10, xCells: 20, baseCellSize: 52, timeAdd: 50, numWalls: 40 },
     ],
     MAX_XCELLS: 20,
-    MAX_WALL_PERCENT: 0.4, // Max % of internal borders that can be walls
+    MAX_WALL_PERCENT: 0.4,
+    GRADIENT_COLORS: [
+        "#ff8a00", "#e52e71", "#873cff", "#00c6ff", "#00ff9d",
+        "#ffe000", "#ff4e50", "#fc67fa", "#30cfd0", "#a3ff00"
+    ]
 };
 
 export function getLevelParams(level) {
@@ -59,8 +62,6 @@ export function getLevelParams(level) {
     for (const tier of tiers) {
         if (params.level === tier.start && levelWithinTier >= tier.xIncLevel) {
             params.xCells++;
-            // Optional: Slightly increase walls within tiers too
-            // if (params.numWalls > 0 && tier.start >= 101) params.numWalls++;
             break;
         }
     }
@@ -70,13 +71,11 @@ export function getLevelParams(level) {
     if (maxPossibleXCells > 1 && params.xCells < 2) params.xCells = 2;
     else if (maxPossibleXCells === 1) params.xCells = 1;
 
-    // Cap walls based on percentage of total possible internal borders
     const totalInternalHorizontalBorders = params.cols * (params.rows - 1);
     const totalInternalVerticalBorders = params.rows * (params.cols - 1);
     const totalInternalBorders = totalInternalHorizontalBorders + totalInternalVerticalBorders;
     const maxAllowedWalls = Math.floor(totalInternalBorders * config.MAX_WALL_PERCENT);
-    // Ensure we don't place more walls than allowed or than makes sense
-    params.numWalls = Math.min(params.numWalls, maxAllowedWalls, totalInternalBorders - (maxPossibleXCells - 1)); // Need at least pathlength-1 borders open
+    params.numWalls = Math.min(params.numWalls, maxAllowedWalls, totalInternalBorders - (maxPossibleXCells - 1));
     params.numWalls = Math.max(0, params.numWalls);
 
     params.timeLimit = config.BASE_TIME_LIMIT + params.timeAdd;

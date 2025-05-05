@@ -120,7 +120,6 @@ h1 {
 }
 
 .cell {
-    /* Default thin border */
     border: 1px solid #ccc;
     text-align: center;
     display: flex;
@@ -133,47 +132,22 @@ h1 {
     font-weight: bold;
     z-index: 2;
     background-color: #ffffff;
-    /* Remove specific borders that will be replaced by walls */
     border-right: none;
     border-bottom: none;
-    /* Add back top and left borders */
     border-top: 1px solid #ccc;
     border-left: 1px solid #ccc;
 }
 
-/* Ensure the last column has a right border */
-.puzzle-grid[style*="grid-template-columns: repeat("] .cell:nth-child(1n) {
-    /* This needs to be dynamic based on gridCols, complex in pure CSS */
-    /* Let's rely on the outer grid border for now, or use JS to add a class to last column cells */
-    /* Alternative: Add padding to puzzle-grid and draw all borders */
-}
-
-/* Ensure the last row has a bottom border */
-.puzzle-grid[style*="grid-template-rows: repeat("] .cell:nth-last-child(-n +
-
-    /* gridCols */
-) {
-    /* Needs JS to add class to last row cells */
-    /* Alternative: Rely on outer border */
-}
-
-
 .cell.selected {
-    background-color: #a0e0a0;
+    background-color: #f5f5f5;
 }
 
-/* Wall Styling */
-/* Draw thicker bottom border */
 .cell.wall-below {
     border-bottom: 3px solid #333 !important;
-    /* Use important to override default if needed */
-    /* margin-bottom: -2px; /* Prevent layout shift - might need adjustment */
 }
 
-/* Draw thicker right border */
 .cell.wall-right {
     border-right: 3px solid #333 !important;
-    /* margin-right: -2px; /* Prevent layout shift - might need adjustment */
 }
 
 
@@ -195,24 +169,32 @@ h1 {
 
 #gamePath {
     fill: none;
-    stroke: #333;
+    stroke: url(#pathGradient);
+    /* Use the defined gradient */
     stroke-width: 35;
+    /* Base width, updated by JS */
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
+/* Remove fixed stroke color, JS will set it */
 #tempPathSegment {
     fill: none;
-    stroke: #333;
+    /* stroke: #555; */
+    /* REMOVED */
     stroke-linecap: round;
     visibility: hidden;
+    /* Stroke width set by JS */
 }
 
+/* Remove fixed stroke color, JS will set it */
 .click-animation-segment {
     fill: none;
-    stroke: #333;
+    /* stroke: #555; */
+    /* REMOVED */
     stroke-linecap: round;
     transition: stroke-dashoffset 0.1s ease-out;
+    /* Stroke width set by JS */
 }
 
 .numbers-svg {
@@ -233,11 +215,13 @@ h1 {
 
 .numbers-svg .number-circle-bg {
     fill: #333;
-    stroke: none;
+    stroke: #fff;
+    stroke-width: 1.5px;
 }
 
 .numbers-svg .number-circle-bg.selected {
     fill: #1a5e1a;
+    stroke: #a0e0a0;
 }
 
 .numbers-svg .number-text {
@@ -621,12 +605,15 @@ button:focus {
         font-size: 1.1em;
     }
 
-    /* Make walls slightly thinner on small screens */
     .cell.wall-below {
         border-bottom-width: 2px;
     }
 
     .cell.wall-right {
         border-right-width: 2px;
+    }
+
+    .numbers-svg .number-circle-bg {
+        stroke-width: 1px;
     }
 }

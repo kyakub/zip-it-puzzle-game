@@ -63,7 +63,6 @@ export function calculateCellSize(rows, cols, baseSize) {
     return size;
 }
 
-// Helper to check for walls between two adjacent cells
 export function isWallBetween(r1, c1, r2, c2, wallPositions) {
     if (!wallPositions || wallPositions.size === 0) {
         return false;
@@ -71,10 +70,10 @@ export function isWallBetween(r1, c1, r2, c2, wallPositions) {
     let wallKey;
     if (r1 === r2) { // Moving horizontally
         const leftCol = Math.min(c1, c2);
-        wallKey = `V_${r1}_${leftCol}`; // Vertical wall to the right of the left cell
+        wallKey = `V_${r1}_${leftCol}`;
     } else { // Moving vertically
         const topRow = Math.min(r1, r2);
-        wallKey = `H_${topRow}_${c1}`; // Horizontal wall below the top cell
+        wallKey = `H_${topRow}_${c1}`;
     }
     return wallPositions.has(wallKey);
 }

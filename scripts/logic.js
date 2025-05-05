@@ -5,12 +5,94 @@ import * as audio from './audio.js';
 import * as timer from './timer.js';
 import * as persistence from './persistence.js';
 import * as levelGenerator from './levelGenerator.js';
-// Corrected import: Changed isWithinBounds back to isValid
+// Corrected: Changed back to isValid
 import { isValid, isNeighbor, shuffle, getCellCenter, calculateCellSize, isWallBetween } from './utils.js';
+
+// Moved function definition earlier
+function updateUiForNewLevel() {
+    const { level, points, timeRemaining, isPaused, isMuted } = getState();
+    ui.updateLevelDisplay(level);
+    ui.updatePointsDisplay(points);
+    ui.updateTimerDisplay(timeRemaining);
+    ui.updatePauseButton(isPaused);
+    ui.updateSoundButton(isMuted);
+}
+
+// Moved function definition earlier
+function generateWallPositions(pathCoords, numWalls, rows, cols) {
+    const walls = new Set();
+    const pathSegments = new Set();
+
+    for (let i = 0; i < pathCoords.length - 1; i++) {
+        const [r1, c1] = pathCoords[i].split('-').map(Number);
+        const [r2, c2] = pathCoords[i + 1].split('-').map(Number);
+        let segmentKey;
+        if (r1 === r2) {
+            segmentKey = `V_${r1}_${Math.min(c1, c2)}`;
+        } else {
+            segmentKey = `H_${Math.min(r1, r2)}_${c1}`;
+        }
+        pathSegments.add(segmentKey);
+    }
+
+    const possibleWalls = [];
+    for (let r = 0; r < rows - 1; r++) {
+        for (let c = 0; c < cols; c++) {
+            possibleWalls.push(`H_${r}_${c}`);
+        }
+    }
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols - 1; c++) {
+            possibleWalls.push(`V_${r}_${c}`);
+        }
+    }
+
+    const allowedWallLocations = possibleWalls.filter(wallKey => !pathSegments.has(wallKey));
+    shuffle(allowedWallLocations);
+    for (let i = 0; i < Math.min(numWalls, allowedWallLocations.length); i++) {
+        walls.add(allowedWallLocations[i]);
+    }
+    return walls;
+}
+
+// Moved function definition earlier
+function finishPuzzleGeneration(hamiltonianPath) {
+    const { gridRows, gridCols, xCells, calculatedCellSize, wallPositions } = getState();
+    const numberPositions = {};
+    const pathLength = hamiltonianPath.length;
+
+    if (pathLength !== gridRows * gridCols) {
+        console.error("Generated path does not cover all cells.");
+        ui.showGenerationErrorText('Generation Error (Path Mismatch)!');
+        ui.disableAllInput();
+        return;
+    }
+
+    numberPositions[hamiltonianPath[0]] = 1;
+    if (xCells > 1) {
+        numberPositions[hamiltonianPath[pathLength - 1]] = xCells;
+    }
+    if (xCells > 2) {
+        const intermediatePathIndices = Array.from({ length: pathLength - 2 }, (_, i) => i + 1);
+        const shuffledIntermediate = shuffle(intermediatePathIndices);
+        const chosenIntermediateIndices = shuffledIntermediate.slice(0, xCells - 2).sort((a, b) => a - b);
+
+        for (let i = 0; i < chosenIntermediateIndices.length; i++) {
+            const pathIndex = chosenIntermediateIndices[i];
+            numberPositions[hamiltonianPath[pathIndex]] = i + 2;
+        }
+    }
+
+    updateState({ numberPositions });
+
+    const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, getState().inputHandlers);
+    setGrid(grid);
+    ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSize);
+}
 
 
 export function startLevel(levelNumber, restoredState = null) {
-    resetLevelState(); // Clears walls from state
+    resetLevelState();
     terminateWorker();
     ui.clearSvgPath();
     ui.hideTempLine();
@@ -18,7 +100,8 @@ export function startLevel(levelNumber, restoredState = null) {
 
     let level, points, gridRows, gridCols, xCells, timeLimit, initialTime = null;
     let numberPositions, pathPointsData, calculatedCellSize, isPaused, expectedNextValue;
-    let wallPositions = new Set(); // Initialize empty wall set
+    let wallPositions = new Set();
+    let currentGradientColors = [...getState().currentGradientColors];
 
     if (restoredState) {
         level = restoredState.level;
@@ -29,7 +112,8 @@ export function startLevel(levelNumber, restoredState = null) {
         timeLimit = restoredState.timeLimit;
         expectedNextValue = restoredState.expectedNextValue;
         numberPositions = restoredState.numberPositions;
-        wallPositions = restoredState.wallPositions; // Load walls
+        wallPositions = restoredState.wallPositions;
+        currentGradientColors = restoredState.currentGradientColors;
         calculatedCellSize = restoredState.calculatedCellSize;
         const elapsedSeconds = Math.floor((Date.now() - restoredState.saveTimestamp) / 1000);
         initialTime = restoredState.timeRemaining - elapsedSeconds;
@@ -38,12 +122,11 @@ export function startLevel(levelNumber, restoredState = null) {
 
         updateState({
             level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize,
-            numberPositions, wallPositions, // Include walls
+            numberPositions, wallPositions, currentGradientColors,
             pathPoints: pathPointsData, isPaused, expectedNextValue
         });
 
     } else {
-        // Generating new level
         const params = getLevelParams(levelNumber);
         level = levelNumber;
         points = getState().points;
@@ -56,13 +139,15 @@ export function startLevel(levelNumber, restoredState = null) {
         pathPointsData = [];
         isPaused = false;
         expectedNextValue = 1;
-        // Temporarily update state for generator call
         updateState({ gridRows, gridCols });
 
-        // Walls are generated AFTER path now, so initialize empty first
+        const shuffledColors = shuffle([...config.GRADIENT_COLORS]);
+        currentGradientColors = shuffledColors.slice(0, 2);
+        ui.updatePathGradient(currentGradientColors);
+
         updateState({
             level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize,
-            numberPositions, wallPositions: new Set(), // Start with empty walls
+            numberPositions, wallPositions: new Set(), currentGradientColors,
             pathPoints: pathPointsData, isPaused, expectedNextValue
         });
     }
@@ -70,7 +155,7 @@ export function startLevel(levelNumber, restoredState = null) {
 
     if (restoredState && initialTime !== null && initialTime <= 0) {
         updateState({ timeRemaining: 0 });
-        updateUiForNewLevel();
+        updateUiForNewLevel(); // Moved function definition up
         handleGameOver("Time ran out while away!", true);
         ui.showGenerationErrorText('Game Over!');
         ui.disableAllInput();
@@ -80,12 +165,13 @@ export function startLevel(levelNumber, restoredState = null) {
     const timeRemaining = (restoredState && initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
     updateState({ timeRemaining });
 
-    updateUiForNewLevel(); // Update level/points display etc.
+    updateUiForNewLevel();
     ui.updateSvgPath(pathPointsData, calculatedCellSize);
     timer.stopTimer();
 
     if (restoredState) {
-        // Build UI including walls from the loaded state
+        ui.updatePathGradient(currentGradientColors);
+
         const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, getState().inputHandlers);
         setGrid(grid);
         setLoadedPath(restoredState.currentPathData, grid);
@@ -95,124 +181,26 @@ export function startLevel(levelNumber, restoredState = null) {
         if (isPaused) {
             ui.togglePauseOverlay(true);
             ui.updatePauseButton(true);
-            // Timer remains stopped
         } else {
             timer.startTimer();
         }
         ui.updateButtonStates(getState());
 
     } else {
-        // Generate Path -> Generate Walls -> Place Numbers -> Build UI -> Start Timer
-        const currentLevelParams = getLevelParams(level); // Get params again for numWalls
+        const currentLevelParams = getLevelParams(level);
         levelGenerator.generateLevelAsync(gridRows, gridCols, (hamiltonianPath) => {
             const newWallPositions = generateWallPositions(hamiltonianPath, currentLevelParams.numWalls, gridRows, gridCols);
-            updateState({ wallPositions: newWallPositions }); // Update state with generated walls
-            finishPuzzleGeneration(hamiltonianPath); // Place numbers on path
+            updateState({ wallPositions: newWallPositions });
+            finishPuzzleGeneration(hamiltonianPath);
             timer.startTimer();
             ui.updateButtonStates(getState());
         });
     }
 }
 
-// Generate walls that DON'T intersect the given path
-function generateWallPositions(pathCoords, numWalls, rows, cols) {
-    const walls = new Set();
-    const pathSegments = new Set();
-
-    // 1. Identify segments crossed by the Hamiltonian path
-    for (let i = 0; i < pathCoords.length - 1; i++) {
-        const [r1, c1] = pathCoords[i].split('-').map(Number);
-        const [r2, c2] = pathCoords[i + 1].split('-').map(Number);
-        let segmentKey;
-        if (r1 === r2) { // Horizontal move
-            segmentKey = `V_${r1}_${Math.min(c1, c2)}`;
-        } else { // Vertical move
-            segmentKey = `H_${Math.min(r1, r2)}_${c1}`;
-        }
-        pathSegments.add(segmentKey);
-    }
-
-    // 2. Identify all possible internal wall locations
-    const possibleWalls = [];
-    // Horizontal walls (below cell r,c)
-    for (let r = 0; r < rows - 1; r++) {
-        for (let c = 0; c < cols; c++) {
-            possibleWalls.push(`H_${r}_${c}`);
-        }
-    }
-    // Vertical walls (right of cell r,c)
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols - 1; c++) {
-            possibleWalls.push(`V_${r}_${c}`);
-        }
-    }
-
-    // 3. Filter out walls that the path crosses
-    const allowedWallLocations = possibleWalls.filter(wallKey => !pathSegments.has(wallKey));
-
-    // 4. Shuffle allowed locations and pick numWalls
-    shuffle(allowedWallLocations);
-    for (let i = 0; i < Math.min(numWalls, allowedWallLocations.length); i++) {
-        walls.add(allowedWallLocations[i]);
-    }
-
-    return walls;
-}
-
-
-function updateUiForNewLevel() {
-    const { level, points, timeRemaining, isPaused, isMuted } = getState();
-    ui.updateLevelDisplay(level);
-    ui.updatePointsDisplay(points);
-    ui.updateTimerDisplay(timeRemaining);
-    ui.updatePauseButton(isPaused); // Reflects the actual state (false for new levels)
-    ui.updateSoundButton(isMuted);
-}
-
-// Places numbers on the generated path and builds the final UI
-function finishPuzzleGeneration(hamiltonianPath) {
-    const { gridRows, gridCols, xCells, calculatedCellSize, wallPositions } = getState(); // Get walls from state
-    const numberPositions = {};
-    const pathLength = hamiltonianPath.length;
-
-    if (pathLength !== gridRows * gridCols) {
-        console.error("Generated path does not cover all cells.");
-        ui.showGenerationErrorText('Generation Error (Path Mismatch)!');
-        ui.disableAllInput();
-        return;
-    }
-
-    // Place number 1 at the start
-    numberPositions[hamiltonianPath[0]] = 1;
-    // Place last number (xCells) at the end
-    if (xCells > 1) {
-        numberPositions[hamiltonianPath[pathLength - 1]] = xCells;
-    }
-    // Place intermediate numbers
-    if (xCells > 2) {
-        const intermediatePathIndices = Array.from({ length: pathLength - 2 }, (_, i) => i + 1);
-        const shuffledIntermediate = shuffle(intermediatePathIndices);
-        const chosenIntermediateIndices = shuffledIntermediate.slice(0, xCells - 2).sort((a, b) => a - b);
-
-        for (let i = 0; i < chosenIntermediateIndices.length; i++) {
-            const pathIndex = chosenIntermediateIndices[i];
-            numberPositions[hamiltonianPath[pathIndex]] = i + 2;
-        }
-    }
-
-    updateState({ numberPositions }); // Update state with final number positions
-
-    // Build grid UI with numbers and walls
-    const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, getState().inputHandlers);
-    setGrid(grid);
-    ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSize);
-}
-
-
 export function addStep(cell, animate = false, puzzleGridElement) {
     const state = getState();
     if (animate && state.isAnimatingClick) return;
-    // Wall check is now done in input handler before calling addStep
 
     const currentValue = parseInt(cell.dataset.value) || null;
     const previousExpectedValue = state.expectedNextValue;
@@ -228,7 +216,6 @@ export function addStep(cell, animate = false, puzzleGridElement) {
         audio.playSound('soundTick');
         updateState({ expectedNextValue: previousExpectedValue + 1 });
     } else {
-        // Play sound even for non-numbered cells if clicking or not dragging
         if (animate || !state.isDrawing) {
             audio.playSound('soundTick');
         }
@@ -237,8 +224,8 @@ export function addStep(cell, animate = false, puzzleGridElement) {
     const onAnimationComplete = () => {
         addPathPoint(targetPointString);
         ui.updateSvgPath(getState().pathPoints, state.calculatedCellSize);
-        checkWinCondition(); // Check after step added
-        ui.updateButtonStates(getState()); // Update buttons AFTER animation
+        checkWinCondition();
+        ui.updateButtonStates(getState());
     };
 
     if (animate && state.currentPath.length > 1) {
@@ -248,23 +235,16 @@ export function addStep(cell, animate = false, puzzleGridElement) {
             state.calculatedCellSize,
             onAnimationComplete
         );
-        // Don't update buttons immediately during animation
     } else {
         addPathPoint(targetPointString);
         ui.updateSvgPath(state.pathPoints, state.calculatedCellSize);
-        checkWinCondition(); // Check after step added
-        // Don't update buttons here during drag (animate is false)
+        checkWinCondition();
     }
-    // Only update buttons if it wasn't an animation (which updates on complete)
-    // or a drag step (which waits for mouseup)
     if (!animate) {
-        // This case now only covers the very first step (value 1)
         if (state.currentPath.length === 1) {
             ui.updateButtonStates(getState());
         }
-        // Drag steps (animate=false, length > 1) don't update here
     } else if (state.currentPath.length === 1 && animate) {
-        // Handle click on first cell (length 1, animate true)
         ui.updateButtonStates(getState());
     }
 }
@@ -292,7 +272,7 @@ export function undoLastStep(isDuringDrag) {
         } else {
             audio.playSound('soundError');
         }
-        ui.updateButtonStates(getState()); // Update buttons only on non-drag undo
+        ui.updateButtonStates(getState());
     }
 }
 
@@ -308,7 +288,7 @@ export function clearPath() {
     ui.hideTempLine();
 
     state.currentPath.forEach(step => {
-        if (step.cell) { // Check if cell exists
+        if (step.cell) {
             const cellKey = `${step.cell.dataset.row}-${step.cell.dataset.col}`;
             step.cell.classList.remove('selected');
             ui.updateSvgNumberSelection(cellKey, false);
@@ -326,16 +306,15 @@ function checkWinCondition() {
     const state = getState();
     if (state.isGameOver || state.isAnimatingClick) return;
 
-    // Target length is always full grid size now
     const targetPathLength = (state.gridRows * state.gridCols);
     const pathLength = state.currentPath.length;
 
-    if (pathLength !== targetPathLength) return; // Path doesn't cover all required cells
+    if (pathLength !== targetPathLength) return;
 
     const correctSequence = state.expectedNextValue > state.xCells;
     const lastCell = state.currentPath[pathLength - 1]?.cell;
 
-    if (!lastCell) { // Should not happen
+    if (!lastCell) {
         handleIncorrectFinish(false, false);
         return;
     }
@@ -362,8 +341,8 @@ function handleWin() {
 
     ui.showMessage(`Level ${getState().level} Complete! Points: ${newPoints}`);
     audio.playSound('soundWin');
-    ui.disableAllInput(); // Disables buttons appropriately
-    ui.updateButtonStates(getState()); // Updates Next Level visibility
+    ui.disableAllInput();
+    ui.updateButtonStates(getState());
 }
 
 function handleIncorrectFinish(correctSequence, endCorrect) {
@@ -374,7 +353,7 @@ function handleIncorrectFinish(correctSequence, endCorrect) {
         ui.showMessage(`Connect numbers 1 to ${getState().xCells} in order.`, null, true);
         audio.playSound('soundError');
     }
-    ui.updateButtonStates(getState()); // Ensure buttons are re-enabled if needed
+    ui.updateButtonStates(getState());
 }
 
 export function handleGameOver(reason, fromLoad = false) {
@@ -392,7 +371,7 @@ export function handleGameOver(reason, fromLoad = false) {
         persistence.saveLevel(1);
         persistence.savePoints(0);
     }
-    ui.updateButtonStates(getState()); // Ensure buttons reflect game over
+    ui.updateButtonStates(getState());
 }
 
 export function handleTimeUp() {
@@ -421,7 +400,7 @@ export function requestResetLevel() {
     persistence.clearFullGameState();
     timer.stopTimer();
     terminateWorker();
-    startLevel(level); // Restart current level
+    startLevel(level);
     ui.showMessage(`Level Reset! ${penaltyMsg}`);
 }
 
@@ -431,15 +410,14 @@ export function requestNextLevel() {
 
     const lastCell = state.currentPath?.[state.currentPath.length - 1]?.cell;
     const lastCellValue = lastCell ? parseInt(lastCell.dataset.value) : NaN;
-    const targetPathLength = (state.gridRows * state.gridCols); // Win is full grid
+    const targetPathLength = (state.gridRows * state.gridCols);
 
-    // Check win condition again just to be safe before proceeding
     if (lastCellValue === state.xCells && state.currentPath.length === targetPathLength && state.expectedNextValue > state.xCells) {
         persistence.clearFullGameState();
         const nextLevel = state.level + 1;
         updateState({ level: nextLevel });
         persistence.saveLevel(nextLevel);
-        startLevel(nextLevel); // Start next level
+        startLevel(nextLevel);
     } else {
         ui.showMessage("Win condition error. Cannot proceed.", null, true);
         updateState({ isGameOver: false });
@@ -448,7 +426,6 @@ export function requestNextLevel() {
 }
 
 export function requestRestartGame() {
-    // Don't pause here, just show the modal
     ui.showRestartModal();
 }
 
@@ -456,10 +433,10 @@ export function performRestart() {
     persistence.clearFullGameState();
     terminateWorker();
     timer.stopTimer();
-    resetFullGameState(); // Resets level to 1, points to 0, isPaused to false, etc.
-    persistence.savePoints(0); // Explicitly save 0 points
-    persistence.saveLevel(1); // Explicitly save level 1
-    startLevel(1); // Start level 1
+    resetFullGameState();
+    persistence.savePoints(0);
+    persistence.saveLevel(1);
+    startLevel(1);
     ui.showMessage("Game Restarted!");
 }
 
@@ -483,7 +460,7 @@ function pauseGame(saveState = true) {
     ui.clearClickAnimation();
     ui.hideTempLine();
     timer.stopTimer();
-    ui.togglePauseOverlay(true); // Show overlay
+    ui.togglePauseOverlay(true);
     ui.showMessage('Game Paused');
 
     if (saveState) {
@@ -498,7 +475,7 @@ function continueGame() {
     if (!isPaused || isGameOver || isGenerating) return;
 
     updateState({ isPaused: false });
-    ui.togglePauseOverlay(false); // Hide overlay
+    ui.togglePauseOverlay(false);
     ui.showMessage('Game Continued');
     timer.startTimer();
     ui.updatePauseButton(false);

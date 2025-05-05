@@ -30,7 +30,16 @@
 
         <div class="puzzle-area">
             <div id="puzzleGrid" class="puzzle-grid"></div>
-            <svg id="pathSvg" class="path-svg"></svg>
+            <svg id="pathSvg" class="path-svg">
+                <defs>
+                    <!-- Simplified to 2 stops with IDs -->
+                    <linearGradient id="pathGradient" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+                        <stop id="gradStop1" offset="0%" stop-color="#ff8a00" />
+                        <stop id="gradStop2" offset="100%" stop-color="#873cff" />
+                    </linearGradient>
+                </defs>
+                <!-- The <polyline> and <line> elements will be added here by ui.js -->
+            </svg>
             <svg id="numbersSvg" class="numbers-svg"></svg>
             <div id="pauseOverlay" class="pause-overlay">
                 <span>The game is paused.<br />Click <b>"Continue"</b> to resume</span>

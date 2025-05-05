@@ -11,7 +11,8 @@ let gameState = {
     currentPath: [],
     pathPoints: [],
     numberPositions: {},
-    wallPositions: new Set(), // Replaced obstacles with walls
+    wallPositions: new Set(),
+    currentGradientColors: ["#ff8a00", "#873cff"],
     svgNumberElements: {},
     gamePathPolyline: null,
     tempLineElement: null,
@@ -33,9 +34,11 @@ export function getState() {
 }
 
 export function updateState(newState) {
-    // Convert wallPositions array back to Set when loading
     if (newState.wallPositions && !(newState.wallPositions instanceof Set)) {
         newState.wallPositions = new Set(newState.wallPositions);
+    }
+    if (newState.currentGradientColors && !Array.isArray(newState.currentGradientColors)) {
+        newState.currentGradientColors = ["#ff8a00", "#873cff"];
     }
     gameState = { ...gameState, ...newState };
 }
@@ -50,7 +53,7 @@ export function resetLevelState() {
         currentPath: [],
         pathPoints: [],
         numberPositions: {},
-        wallPositions: new Set(), // Reset walls
+        wallPositions: new Set(),
         svgNumberElements: {},
         expectedNextValue: 1,
         currentPuzzle: [],
@@ -70,7 +73,8 @@ export function resetFullGameState() {
         currentPath: [],
         pathPoints: [],
         numberPositions: {},
-        wallPositions: new Set(), // Reset walls
+        wallPositions: new Set(),
+        currentGradientColors: ["#ff8a00", "#873cff"],
         svgNumberElements: {},
         expectedNextValue: 1,
         currentPuzzle: [],

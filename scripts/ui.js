@@ -7,6 +7,8 @@ let messageTimeouts = {};
 
 export function initializeUI(domElements) {
     elements = domElements;
+    elements.gradStop1 = document.getElementById('gradStop1');
+    elements.gradStop2 = document.getElementById('gradStop2');
     ensureSvgElements();
 }
 
@@ -53,7 +55,6 @@ export function updatePauseButton(isPaused) {
     }
 }
 
-// Updated signature: using wallPositions
 export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallPositions, inputHandlers) {
     elements.puzzleGridElement.innerHTML = '';
     elements.numbersSvgElement.innerHTML = '';
@@ -75,15 +76,13 @@ export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallP
             cell.style.width = `${cellSize}px`;
             cell.style.height = `${cellSize}px`;
 
-            // Add wall classes based on wallPositions
-            if (wallPositions.has(`H_${r}_${c}`)) { // Horizontal wall below this cell
+            if (wallPositions.has(`H_${r}_${c}`)) {
                 cell.classList.add('wall-below');
             }
-            if (wallPositions.has(`V_${r}_${c}`)) { // Vertical wall right of this cell
+            if (wallPositions.has(`V_${r}_${c}`)) {
                 cell.classList.add('wall-right');
             }
 
-            // Add listeners to ALL cells (input handler will check walls)
             cell.addEventListener('mousemove', inputHandlers.handleMouseMove);
             cell.addEventListener('mousedown', inputHandlers.handleMouseDown);
             cell.addEventListener('touchstart', inputHandlers.handleTouchStart, { passive: true });
@@ -136,14 +135,13 @@ export function clearSvgPath() {
 export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
     elements.numbersSvgElement.innerHTML = '';
     const newSvgElements = {};
-    const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275)); // Preserved manual change
-    const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28)); // Preserved manual change
+    const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275));
+    const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28));
 
     for (const cellKey in numberPositions) {
         const value = numberPositions[cellKey];
         const [r, c] = cellKey.split('-').map(Number);
         const cellElement = puzzleGrid?.[r]?.[c];
-        // No need to check for obstacles now
         if (!cellElement) continue;
 
         const center = getCellCenter(cellElement, elements.puzzleGridElement);
@@ -182,6 +180,15 @@ export function updateSvgNumberSelection(cellKey, isSelected) {
     }
 }
 
+export function updatePathGradient(colors) {
+    if (elements.gradStop1 && elements.gradStop2 && colors && colors.length >= 2) {
+        elements.gradStop1.setAttribute('stop-color', colors[0]);
+        elements.gradStop2.setAttribute('stop-color', colors[1]);
+    } else {
+        console.warn("Could not update gradient colors. Elements or colors missing.");
+    }
+}
+
 export function showGeneratingText() {
     elements.puzzleGridElement.innerHTML = '<div class="generating-text">Generating Level...<br/>Please Wait</div>';
     elements.puzzleGridElement.style.gridTemplateRows = ``;
@@ -194,10 +201,9 @@ export function showGenerationErrorText(message) {
 
 
 export function updateButtonStates(state) {
-    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue } = state; // Removed wallPositions
+    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue } = state;
     const canInteract = !isGameOver && !isGenerating && !isPaused && !isAnimatingClick;
     const canPause = !isGameOver && !isGenerating;
-    // Win condition is always full grid coverage now
     const targetPathLength = gridRows * gridCols;
     const isGameWon = isGameOver && currentPath.length === targetPathLength && expectedNextValue > xCells;
 
@@ -293,13 +299,15 @@ export function togglePauseOverlay(show) {
 }
 
 export function updateTempLineStart(cell) {
-    const { tempLineElement } = getState();
+    const { tempLineElement, currentGradientColors } = getState();
     if (tempLineElement) {
         const center = getCellCenter(cell, elements.puzzleGridElement);
+        const endColor = currentGradientColors[1] || '#555';
         tempLineElement.setAttribute('x1', center.x);
         tempLineElement.setAttribute('y1', center.y);
         tempLineElement.setAttribute('x2', center.x);
         tempLineElement.setAttribute('y2', center.y);
+        tempLineElement.setAttribute('stroke', endColor);
         tempLineElement.style.visibility = 'visible';
     }
 }
@@ -335,6 +343,9 @@ export function hideTempLine() {
 }
 
 export function animateClickPath(startPointString, targetCoords, cellSize, onComplete) {
+    const { currentGradientColors } = getState();
+    const endColor = currentGradientColors[1] || '#555';
+
     updateState({ isAnimatingClick: true });
     const [startX, startY] = startPointString.split(',').map(Number);
     const animLine = document.createElementNS(config.SVG_NS, 'line');
@@ -345,6 +356,7 @@ export function animateClickPath(startPointString, targetCoords, cellSize, onCom
     animLine.classList.add('click-animation-segment');
     const lineThickness = Math.min(35, cellSize * 0.8);
     animLine.setAttribute('stroke-width', lineThickness);
+    animLine.setAttribute('stroke', endColor);
     elements.pathSvgElement.appendChild(animLine);
 
     const deltaX = targetCoords.x - startX;

@@ -28,17 +28,18 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
 *   Challenging path-drawing puzzle connecting numbers sequentially.
 *   Supports both drag-and-draw and click-to-select path creation.
-*   **Walls:** Introduces walls between cells that block path movement (replaces cell obstacles).
+*   **Walls:** Introduces walls between cells that block path movement.
 *   Requires complete grid coverage and ending on the final number.
+*   **Randomized Gradient Path:** Drawn path features a unique 2-color gradient for each new level attempt, selected randomly from a palette of 10 colors.
 *   **Guaranteed solvable levels:** Generates a valid path first, then adds walls that don't block that specific path.
 *   **Asynchronous level generation** prevents UI freezes (using Web Workers).
 *   Progressive difficulty across levels (grid size, numbers, wall count).
 *   Timed challenge per level with **Pause/Continue** & auto-pause.
 *   Scoring system: Points for level completion + time bonus; penalty for resetting.
-*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout (including walls), path progress, and pause state locally.
+*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout (including walls), path progress, and pause state locally. (Note: Gradient colors are not saved/restored).
 *   Sound effects toggle with saved preference.
 *   Undo (button and click-back) and Clear Path functionality.
-*   Clear visual feedback (path lines scale, distinct walls).
+*   Clear visual feedback (path lines scale, distinct walls, gradient path).
 *   Restart confirmation modal.
 *   **Responsive design**.
 *   Touch controls supported.
@@ -119,6 +120,8 @@ Difficulty progresses based on level thresholds (summary):
 
 ## Future Enhancements Potential
 
-*   Visual themes.
+*   Visual themes (could dynamically change gradient colors).
 *   High score board display.
 *   Tutorial mode.
+*   More sophisticated wall placement algorithms.
+*   More advanced path gradient rendering (e.g., per segment - performance intensive).

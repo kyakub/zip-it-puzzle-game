@@ -35,7 +35,7 @@ export function saveFullGameState() {
     }
 
     const pathData = getPathForSave();
-    const wallData = Array.from(state.wallPositions); // Convert Set to Array
+    const wallData = Array.from(state.wallPositions);
 
     const stateToSave = {
         level: state.level,
@@ -49,7 +49,8 @@ export function saveFullGameState() {
         saveTimestamp: Date.now(),
         expectedNextValue: state.expectedNextValue,
         numberPositions: state.numberPositions,
-        wallPositions: wallData, // Save wall array
+        wallPositions: wallData,
+        currentGradientColors: state.currentGradientColors,
         currentPathData: pathData,
         pathPointsData: state.pathPoints,
         isMuted: state.isMuted,
@@ -64,20 +65,18 @@ export function loadFullGameState() {
 
     try {
         const parsedState = JSON.parse(savedStateJSON);
-        // Basic validation
         if (parsedState && typeof parsedState.level === 'number'
             && typeof parsedState.points === 'number'
             && typeof parsedState.timeRemaining === 'number'
             && parsedState.numberPositions
-            && Array.isArray(parsedState.wallPositions)) // Check wall array exists
-        {
+            && Array.isArray(parsedState.wallPositions)
+            && Array.isArray(parsedState.currentGradientColors)
+            && parsedState.currentGradientColors.length === 2) {
             removeData(config.STORAGE_KEY_GAME_STATE);
-            // Convert wall array back to Set before returning
             parsedState.wallPositions = new Set(parsedState.wallPositions);
             return parsedState;
         } else {
-            // If old state with obstacles exists, treat as invalid
-            console.warn("Invalid saved state found (or old obstacle format), clearing.");
+            console.warn("Invalid saved state found, clearing.");
             clearFullGameState();
             return null;
         }
