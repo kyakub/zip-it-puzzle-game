@@ -13,12 +13,12 @@ export const config = {
     SVG_NS: "http://www.w3.org/2000/svg",
     ANIMATION_DURATION_CLICK: 100,
     LEVEL_PARAMS: [
-        // Added numWaypoints
+        // Updated Level Parameters
         { level: 1, rows: 4, cols: 4, xCells: 5, baseCellSize: 70, timeAdd: 0, numWalls: 0, numWaypoints: 0 },
-        { level: 11, rows: 4, cols: 4, xCells: 6, baseCellSize: 70, timeAdd: 0, numWalls: 1, numWaypoints: 0 },
+        { level: 7, rows: 5, cols: 5, xCells: 6, baseCellSize: 65, timeAdd: 5, numWalls: 1, numWaypoints: 0 },
         { level: 21, rows: 5, cols: 5, xCells: 7, baseCellSize: 65, timeAdd: 5, numWalls: 2, numWaypoints: 0 },
-        { level: 41, rows: 5, cols: 5, xCells: 8, baseCellSize: 65, timeAdd: 5, numWalls: 3, numWaypoints: 0 },
-        { level: 61, rows: 6, cols: 6, xCells: 9, baseCellSize: 60, timeAdd: 10, numWalls: 4, numWaypoints: 1 }, // Start waypoints
+        { level: 41, rows: 6, cols: 6, xCells: 8, baseCellSize: 65, timeAdd: 5, numWalls: 3, numWaypoints: 0 },
+        { level: 61, rows: 6, cols: 6, xCells: 9, baseCellSize: 60, timeAdd: 10, numWalls: 4, numWaypoints: 1 },
         { level: 81, rows: 6, cols: 6, xCells: 10, baseCellSize: 60, timeAdd: 10, numWalls: 5, numWaypoints: 1 },
         { level: 101, rows: 7, cols: 7, xCells: 11, baseCellSize: 56, timeAdd: 15, numWalls: 6, numWaypoints: 2 },
         { level: 121, rows: 7, cols: 7, xCells: 12, baseCellSize: 56, timeAdd: 15, numWalls: 8, numWaypoints: 2 },
@@ -50,14 +50,21 @@ export function getLevelParams(level) {
     }
 
     const levelWithinTier = level - params.level;
+    // Updated tiers array for xCells increment logic
     const tiers = [
-        { start: 21, xIncLevel: 20 }, { start: 41, xIncLevel: 20 },
-        { start: 61, xIncLevel: 20 }, { start: 81, xIncLevel: 20 },
-        { start: 101, xIncLevel: 20 }, { start: 121, xIncLevel: 20 },
-        { start: 141, xIncLevel: 20 }, { start: 161, xIncLevel: 20 },
-        { start: 181, xIncLevel: 20 }, { start: 201, xIncLevel: 20 },
-        { start: 221, xIncLevel: 20 }, { start: 241, xIncLevel: 20 },
-        { start: 261, xIncLevel: 20 }, { start: 281, xIncLevel: 20 },
+        { start: 21, xIncLevel: 10 },  // For levels 21-40 (xCells: 7->8), xCells increments after 10 levels from start (at level 31)
+        { start: 41, xIncLevel: 10 },  // For levels 41-60 (xCells: 8->9), xCells increments after 10 levels from start (at level 51)
+        { start: 61, xIncLevel: 10 },  // For levels 61-80 (xCells: 9->10), xCells increments after 10 levels from start (at level 71)
+        { start: 81, xIncLevel: 10 },  // For levels 81-100 (xCells: 10->11), xCells increments after 10 levels from start (at level 91)
+        { start: 101, xIncLevel: 10 }, // For levels 101-120 (xCells: 11->12), xCells increments after 10 levels from start (at level 111)
+        { start: 121, xIncLevel: 10 }, // For levels 121-140 (xCells: 12->13), xCells increments after 10 levels from start (at level 131)
+        { start: 141, xIncLevel: 10 }, // For levels 141-160 (xCells: 13->14), xCells increments after 10 levels from start (at level 151)
+        { start: 161, xIncLevel: 10 }, // For levels 161-180 (xCells: 14->15), xCells increments after 10 levels from start (at level 171)
+        { start: 181, xIncLevel: 10 }, // For levels 181-200 (xCells: 15->16), xCells increments after 10 levels from start (at level 191)
+        { start: 201, xIncLevel: 10 }, // For levels 201-220 (xCells: 16->17), xCells increments after 10 levels from start (at level 211)
+        { start: 221, xIncLevel: 10 }, // For levels 221-240 (xCells: 17->18), xCells increments after 10 levels from start (at level 231)
+        { start: 241, xIncLevel: 10 }, // For levels 241-260 (xCells: 18->19), xCells increments after 10 levels from start (at level 251)
+        { start: 261, xIncLevel: 10 }, // For levels 261-280 (xCells: 19->20), xCells increments after 10 levels from start (at level 271)
     ];
 
     for (const tier of tiers) {
