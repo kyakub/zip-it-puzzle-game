@@ -52,14 +52,14 @@ function countOpenNeighbors(r, c, wallPositions, pathSegments) {
 function calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, numberCoords, allowedWallLocationsSet) {
     let score = Math.random() * 0.5;
     const wallType = wallKey[0];
-    const [r, c] = wallKey.substring(2).split('_').map(Number);
+    const [r_wall, c_wall] = wallKey.substring(2).split('_').map(Number);
 
-    let r1, c1, r2, c2;
-    if (wallType === 'H') { r1 = r; c1 = c; r2 = r + 1; c2 = c; }
-    else { r1 = r; c1 = c; r2 = r; c2 = c + 1; }
+    let r1_wall, c1_wall, r2_wall, c2_wall;
+    if (wallType === 'H') { r1_wall = r_wall; c1_wall = c_wall; r2_wall = r_wall + 1; c2_wall = c_wall; }
+    else { r1_wall = r_wall; c1_wall = c_wall; r2_wall = r_wall; c2_wall = c_wall + 1; }
 
-    const cell1Str = `${r1}-${c1}`;
-    const cell2Str = `${r2}-${c2}`;
+    const cell1Str = `${r1_wall}-${c1_wall}`;
+    const cell2Str = `${r2_wall}-${c2_wall}`;
 
     if (turnCells.has(cell1Str) || turnCells.has(cell2Str)) {
         score += 5;
@@ -78,19 +78,19 @@ function calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, number
 
     let parallelSegmentKey = null;
     if (wallType === 'H') {
-        parallelSegmentKey = `H_${r1 - 1}_${c1}`;
+        parallelSegmentKey = `H_${r1_wall - 1}_${c1_wall}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
-        parallelSegmentKey = `H_${r2}_${c2}`;
+        parallelSegmentKey = `H_${r2_wall}_${c2_wall}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
     } else {
-        parallelSegmentKey = `V_${r1}_${c1 - 1}`;
+        parallelSegmentKey = `V_${r1_wall}_${c1_wall - 1}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
-        parallelSegmentKey = `V_${r2}_${c2}`;
+        parallelSegmentKey = `V_${r2_wall}_${c2_wall}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
     }
 
-    const openNeighbors1 = countOpenNeighbors(r1, c1, new Set([wallKey]), pathSegments);
-    const openNeighbors2 = countOpenNeighbors(r2, c2, new Set([wallKey]), pathSegments);
+    const openNeighbors1 = countOpenNeighbors(r1_wall, c1_wall, new Set([wallKey]), pathSegments);
+    const openNeighbors2 = countOpenNeighbors(r2_wall, c2_wall, new Set([wallKey]), pathSegments);
     if (openNeighbors1 <= 1 || openNeighbors2 <= 1) {
         score += 1;
     }
@@ -104,17 +104,17 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     const turnCells = new Set();
 
     for (let i = 0; i < pathCoords.length - 1; i++) {
-        const [r1, c1] = parseCoord(pathCoords[i]);
-        const [r2, c2] = parseCoord(pathCoords[i + 1]);
+        const [r1_coord, c1_coord] = parseCoord(pathCoords[i]);
+        const [r2_coord, c2_coord] = parseCoord(pathCoords[i + 1]);
         let segmentKey;
-        if (r1 === r2) { segmentKey = `V_${r1}_${Math.min(c1, c2)}`; }
-        else { segmentKey = `H_${Math.min(r1, r2)}_${c1}`; }
+        if (r1_coord === r2_coord) { segmentKey = `V_${r1_coord}_${Math.min(c1_coord, c2_coord)}`; }
+        else { segmentKey = `H_${Math.min(r1_coord, r2_coord)}_${c1_coord}`; }
         pathSegments.add(segmentKey);
 
         if (i > 0 && i < pathCoords.length - 1) {
             const [r0, c0] = parseCoord(pathCoords[i - 1]);
-            const dir1 = getDirection(r0, c0, r1, c1);
-            const dir2 = getDirection(r1, c1, r2, c2);
+            const dir1 = getDirection(r0, c0, r1_coord, c1_coord);
+            const dir2 = getDirection(r1_coord, c1_coord, r2_coord, c2_coord);
             if (dir1 !== dir2) {
                 turnCells.add(pathCoords[i]);
             }
@@ -122,8 +122,8 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     }
 
     const possibleWalls = [];
-    for (let r = 0; r < rows - 1; r++) { for (let c = 0; c < cols; c++) possibleWalls.push(`H_${r}_${c}`); }
-    for (let r = 0; r < rows; r++) { for (let c = 0; c < cols - 1; c++) possibleWalls.push(`V_${r}_${c}`); }
+    for (let r_loop = 0; r_loop < rows - 1; r_loop++) { for (let c_loop = 0; c_loop < cols; c_loop++) possibleWalls.push(`H_${r_loop}_${c_loop}`); }
+    for (let r_loop = 0; r_loop < rows; r_loop++) { for (let c_loop = 0; c_loop < cols - 1; c_loop++) possibleWalls.push(`V_${r_loop}_${c_loop}`); }
 
     const allowedWallLocations = possibleWalls.filter(wallKey => !pathSegments.has(wallKey));
     const allowedWallLocationsSet = new Set(allowedWallLocations);
@@ -153,21 +153,21 @@ function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions,
     }
 
     const scoredCandidates = emptyPathCells.map(coord => {
-        const [r, c] = parseCoord(coord);
+        const [r_coord, c_coord] = parseCoord(coord);
         let score = Math.random() * 0.5;
 
         const pathSegments = new Set();
         for (let i = 0; i < hamiltonianPath.length - 1; i++) {
-            const [r1, c1] = parseCoord(hamiltonianPath[i]);
-            const [r2, c2] = parseCoord(hamiltonianPath[i + 1]);
+            const [r1_path, c1_path] = parseCoord(hamiltonianPath[i]);
+            const [r2_path, c2_path] = parseCoord(hamiltonianPath[i + 1]);
             let segmentKey;
-            if (r1 === r2) { segmentKey = `V_${r1}_${Math.min(c1, c2)}`; }
-            else { segmentKey = `H_${Math.min(r1, r2)}_${c1}`; }
+            if (r1_path === r2_path) { segmentKey = `V_${r1_path}_${Math.min(c1_path, c2_path)}`; }
+            else { segmentKey = `H_${Math.min(r1_path, r2_path)}_${c1_path}`; }
             pathSegments.add(segmentKey);
         }
-        const openNeighbors = countOpenNeighbors(r, c, wallPositions, pathSegments);
-        if (openNeighbors === 1) score += 5;
-        else if (openNeighbors === 2) score += 3;
+        const openNeighborsVal = countOpenNeighbors(r_coord, c_coord, wallPositions, pathSegments);
+        if (openNeighborsVal === 1) score += 5;
+        else if (openNeighborsVal === 2) score += 3;
 
         const currentIndex = hamiltonianPath.indexOf(coord);
         let distToPrevNum = Infinity;
@@ -204,7 +204,7 @@ function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions,
 }
 
 function finishPuzzleGeneration(hamiltonianPath) {
-    const { gridRows, gridCols, calculatedCellSize, wallPositions, numberPositions, waypointPositions } = getState();
+    const { gridRows, gridCols, calculatedCellSize, wallPositions, numberPositions, waypointPositions, inputHandlers } = getState();
 
     const pathLength = hamiltonianPath.length;
     if (pathLength !== gridRows * gridCols) {
@@ -214,23 +214,23 @@ function finishPuzzleGeneration(hamiltonianPath) {
         return;
     }
 
-    const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, waypointPositions, getState().inputHandlers);
+    const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, waypointPositions, inputHandlers);
     setGrid(grid);
     ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSize);
 }
 
 function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
-    const numberPositions = new Map();
+    const numberPositionsMap = new Map();
     const pathLength = hamiltonianPath.length;
 
     if (pathLength !== rows * cols || pathLength < xCells) {
         console.error("Cannot place numbers: Invalid path length.");
-        return numberPositions;
+        return numberPositionsMap;
     }
 
-    numberPositions.set(hamiltonianPath[0], 1);
+    numberPositionsMap.set(hamiltonianPath[0], 1);
     if (xCells > 1) {
-        numberPositions.set(hamiltonianPath[pathLength - 1], xCells);
+        numberPositionsMap.set(hamiltonianPath[pathLength - 1], xCells);
     }
     if (xCells > 2) {
         const intermediatePathIndices = Array.from({ length: pathLength - 2 }, (_, i) => i + 1);
@@ -278,10 +278,10 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
 
         for (let i = 0; i < chosenIndices.length; i++) {
             const pathIndex = chosenIndices[i];
-            numberPositions.set(hamiltonianPath[pathIndex], i + 2);
+            numberPositionsMap.set(hamiltonianPath[pathIndex], i + 2);
         }
     }
-    return numberPositions;
+    return numberPositionsMap;
 }
 
 export function startLevel(levelNumber, restoredState = null) {
@@ -293,10 +293,10 @@ export function startLevel(levelNumber, restoredState = null) {
 
     let level, points, gridRows, gridCols, xCells, timeLimit, initialTime = null;
     let numberPositions = {};
-    let pathPointsData, calculatedCellSize, isPaused, expectedNextValue;
-    let wallPositions = new Set();
-    let waypointPositions = new Set();
-    let currentGradientColors = [...getState().currentGradientColors];
+    let pathPointsData, calculatedCellSizeVal, isPaused, expectedNextValue;
+    let wallPositionsSet = new Set();
+    let waypointPositionsSet = new Set();
+    let currentGradientColorsArr = [...getState().currentGradientColors];
 
     if (restoredState) {
         level = restoredState.level;
@@ -307,21 +307,21 @@ export function startLevel(levelNumber, restoredState = null) {
         timeLimit = restoredState.timeLimit;
         expectedNextValue = restoredState.expectedNextValue;
         numberPositions = restoredState.numberPositions;
-        wallPositions = restoredState.wallPositions;
-        waypointPositions = restoredState.waypointPositions;
-        currentGradientColors = restoredState.currentGradientColors;
-        calculatedCellSize = restoredState.calculatedCellSize;
+        wallPositionsSet = restoredState.wallPositions;
+        waypointPositionsSet = restoredState.waypointPositions;
+        currentGradientColorsArr = restoredState.currentGradientColors;
+        calculatedCellSizeVal = restoredState.calculatedCellSize;
         const elapsedSeconds = Math.floor((Date.now() - restoredState.saveTimestamp) / 1000);
         initialTime = restoredState.timeRemaining - elapsedSeconds;
         isPaused = restoredState.isPaused ?? false;
         pathPointsData = restoredState.pathPointsData || [];
 
         updateState({
-            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize,
-            numberPositions, wallPositions, waypointPositions,
-            currentGradientColors, pathPoints: pathPointsData, isPaused, expectedNextValue
+            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize: calculatedCellSizeVal,
+            numberPositions, wallPositions: wallPositionsSet, waypointPositions: waypointPositionsSet,
+            currentGradientColors: currentGradientColorsArr, pathPoints: pathPointsData, isPaused, expectedNextValue
         });
-        ui.updatePathGradient(currentGradientColors);
+        ui.updatePathGradient(currentGradientColorsArr);
 
     } else {
         const params = getLevelParams(levelNumber);
@@ -331,20 +331,20 @@ export function startLevel(levelNumber, restoredState = null) {
         gridCols = params.cols;
         xCells = params.xCells;
         timeLimit = params.timeLimit;
-        calculatedCellSize = calculateCellSize(gridRows, gridCols, params.baseCellSize);
+        calculatedCellSizeVal = calculateCellSize(gridRows, gridCols, params.baseCellSize);
         pathPointsData = [];
         isPaused = false;
         expectedNextValue = 1;
-        updateState({ gridRows, gridCols, calculatedCellSize });
+        updateState({ gridRows, gridCols, calculatedCellSize: calculatedCellSizeVal });
 
         const shuffledColors = shuffle([...config.GRADIENT_COLORS]);
-        currentGradientColors = shuffledColors.slice(0, 2);
-        ui.updatePathGradient(currentGradientColors);
+        currentGradientColorsArr = shuffledColors.slice(0, 2);
+        ui.updatePathGradient(currentGradientColorsArr);
 
         updateState({
-            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize,
+            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize: calculatedCellSizeVal,
             numberPositions: {}, wallPositions: new Set(), waypointPositions: new Set(),
-            currentGradientColors, pathPoints: pathPointsData, isPaused, expectedNextValue
+            currentGradientColors: currentGradientColorsArr, pathPoints: pathPointsData, isPaused, expectedNextValue
         });
     }
 
@@ -357,19 +357,19 @@ export function startLevel(levelNumber, restoredState = null) {
         return;
     }
 
-    const timeRemaining = (restoredState && initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
-    updateState({ timeRemaining });
+    const timeRemainingVal = (restoredState && initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
+    updateState({ timeRemaining: timeRemainingVal });
 
     updateUiForNewLevel();
-    ui.updateSvgPath(pathPointsData, calculatedCellSize);
+    ui.updateSvgPath(pathPointsData, calculatedCellSizeVal);
     timer.stopTimer();
 
     if (restoredState) {
-        const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSize, numberPositions, wallPositions, waypointPositions, getState().inputHandlers);
+        const grid = ui.buildGridUI(gridRows, gridCols, calculatedCellSizeVal, numberPositions, wallPositionsSet, waypointPositionsSet, getState().inputHandlers);
         setGrid(grid);
         setLoadedPath(restoredState.currentPathData, grid);
         ui.restorePathUI(getState().currentPath);
-        ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSize);
+        ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSizeVal);
 
         if (isPaused) {
             ui.togglePauseOverlay(true);
@@ -458,6 +458,68 @@ export function addStep(cell, animate = false, puzzleGridElement) {
     }
 }
 
+export function addStepsInLine(cellsInLine, puzzleGridElement) {
+    const state = getState();
+    if (state.isAnimatingClick || cellsInLine.length === 0) return;
+
+    const originalLastPathPointString = state.pathPoints.length > 0 ? state.pathPoints[state.pathPoints.length - 1] : null;
+
+    if (!originalLastPathPointString && state.currentPath.length > 0) {
+        console.warn("addStepsInLine: pathPoints is empty but currentPath is not. This indicates a state mismatch.");
+        return;
+    }
+    if (state.currentPath.length === 0 && cellsInLine.length > 0) {
+        console.warn("addStepsInLine called on an empty path. First step should be handled by addStep.");
+        if (cellsInLine.length === 1 && (parseInt(cellsInLine[0].dataset.value) || null) === 1) {
+            addStep(cellsInLine[0], true, puzzleGridElement);
+        }
+        return;
+    }
+
+
+    for (const cell of cellsInLine) {
+        const cellKey = `${cell.dataset.row}-${cell.dataset.col}`;
+        const previousExpectedValue = getState().expectedNextValue;
+        const currentValue = parseInt(cell.dataset.value) || null;
+
+        cell.classList.add('selected');
+        if (cell.classList.contains('waypoint')) {
+            cell.classList.add('waypoint-visited');
+        }
+        ui.updateSvgNumberSelection(cellKey, true);
+        addPathStep(cell, previousExpectedValue);
+
+        if (currentValue === previousExpectedValue) {
+            updateState({ expectedNextValue: previousExpectedValue + 1 });
+        }
+
+        const targetCoords = getCellCenter(cell, puzzleGridElement);
+        addPathPoint(`${targetCoords.x},${targetCoords.y}`);
+    }
+
+    audio.playSound('soundTick');
+    ui.updateSvgPath(getState().pathPoints, state.calculatedCellSize);
+
+    const finalTargetCell = cellsInLine[cellsInLine.length - 1];
+    const finalTargetCoords = getCellCenter(finalTargetCell, puzzleGridElement);
+
+    const onAnimationComplete = () => {
+        checkWinCondition();
+        ui.updateButtonStates(getState());
+    };
+
+    if (originalLastPathPointString) {
+        ui.animateClickPath(
+            originalLastPathPointString,
+            finalTargetCoords,
+            state.calculatedCellSize,
+            onAnimationComplete
+        );
+    } else {
+        onAnimationComplete();
+    }
+}
+
 export function undoLastStep(isDuringDrag) {
     ui.clearClickAnimation();
     if (getState().currentPath.length <= 0) return;
@@ -487,6 +549,21 @@ export function undoLastStep(isDuringDrag) {
         ui.updateButtonStates(getState());
     }
 }
+
+export function undoStepsInLine(targetCellAsNewLast) {
+    if (getState().isAnimatingClick) return;
+    ui.clearClickAnimation();
+
+    let currentPath = getState().currentPath;
+    while (currentPath.length > 0 && currentPath[currentPath.length - 1].cell !== targetCellAsNewLast) {
+        if (currentPath.length === 1 && currentPath[0].cell === targetCellAsNewLast) break;
+        undoLastStep(false);
+        currentPath = getState().currentPath;
+        if (currentPath.length === 0) break;
+    }
+    ui.updateButtonStates(getState());
+}
+
 
 export function clearPath() {
     const state = getState();
@@ -532,7 +609,7 @@ function checkWinCondition() {
     const lastCell = state.currentPath[pathLength - 1]?.cell;
 
     if (!lastCell) {
-        handleIncorrectFinish(false, false);
+        handleIncorrectFinish(false, false, false);
         return;
     }
 
@@ -652,10 +729,10 @@ export function requestNextLevel() {
 
     if (lastCellValue === state.xCells && state.currentPath.length === targetPathLength && state.expectedNextValue > state.xCells && allWaypointsVisited) {
         persistence.clearFullGameState();
-        const nextLevel = state.level + 1;
-        updateState({ level: nextLevel });
-        persistence.saveLevel(nextLevel);
-        startLevel(nextLevel);
+        const nextLevelNum = state.level + 1;
+        updateState({ level: nextLevelNum });
+        persistence.saveLevel(nextLevelNum);
+        startLevel(nextLevelNum);
     } else {
         ui.showMessage("Win condition error. Cannot proceed.", null, true);
         updateState({ isGameOver: false });

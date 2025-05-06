@@ -9,14 +9,18 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 1.  **Start:** Click/Tap on the cell containing '1'. This selects the first cell.
 2.  **Draw/Select:**
     *   **Drag:** Click/Tap and hold on the last cell in the path, then drag your mouse/finger to adjacent (up, down, left, right) cells to extend the path, provided there isn't a wall blocking the way.
-    *   **Click:** Alternatively, click/tap an adjacent, unselected cell to add it to the path, provided there isn't a wall between the last cell and the clicked cell. Clicking/tapping the second-to-last cell in the path removes the last step (undo).
-3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells can be traversed freely between numbers, respecting walls.
+    *   **Click (Adjacent):** Alternatively, click/tap an adjacent, unselected cell to add it to the path, provided there isn't a wall between the last cell and the clicked cell.
+    *   **Click (Line Draw/Retract):**
+        *   **Forward:** Clicking an unselected cell on the same horizontal or vertical axis as the current last cell in the path will attempt to draw a straight line to it. This is successful if all intermediate cells are unselected, there are no walls blocking the way, and any numbered cells encountered along the line match the expected sequence (e.g., if the next expected number is '3', the line can pass over '3' but not '4'). Numbered cells that match the sequence are "collected."
+        *   **Backward:** Clicking a cell that is already part of the path (and not the last cell) and lies on the same horizontal or vertical axis as the current last cell will retract the path back to the clicked cell, provided the path segment between them is a straight line. Numbers "un-collected" during retraction correctly update the expected sequence.
+    *   **Undo (Click Back):** Clicking/tapping the second-to-last cell in the path removes the last step.
+3.  **Sequence:** Enter numbered cells in ascending order (1 -> 2 -> 3...). Empty cells (or unselected numbered cells if using line draw and they match the sequence) can be traversed freely between numbers, respecting walls.
 4.  **Walls:** Thick lines between cells are walls and cannot be crossed by the path.
 5.  **Waypoints:** Cells marked with a grey dot are waypoints. The path *must* pass through all waypoint cells to be valid. Waypoints turn darker once visited.
 6.  **Fill & End:** After connecting the highest number for the level, continue until *all* cells are filled. The path *must* pass through all waypoints and *must end* on the highest numbered cell.
 7.  **Goal:** Complete the path covering all cells, following the number sequence, passing through all waypoints, without crossing walls, ending correctly, before the timer runs out.
 8.  **Controls:**
-    *   **Drawing/Selecting:** Click/Tap and drag from the last cell OR click/tap adjacent cells. Movement is blocked by walls. Click/Tap the *second-to-last* cell in the path to undo the last step.
+    *   **Drawing/Selecting:** Click/Tap and drag from the last cell OR click/tap adjacent/axial cells as described above. Movement is blocked by walls. Click/Tap the *second-to-last* cell in the path to undo the last step.
     *   **Undo Button:** Removes the last path segment (cannot be used while drawing or paused).
     *   **Clear Path:** Removes the entire currently drawn path (cannot be used while drawing or paused). Resets numbers to visible.
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
@@ -28,7 +32,7 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 ## Features
 
 *   Challenging path-drawing puzzle connecting numbers sequentially.
-*   Supports both drag-and-draw and click-to-select path creation.
+*   Supports drag-and-draw, click-to-select adjacent cells, and click-to-draw/retract straight lines over axial cells, respecting number sequence.
 *   **Walls:** Introduces walls between cells that block path movement.
 *   **Waypoints:** Adds mandatory cells (marked with dots) that the path must pass through, increasing complexity.
 *   Requires complete grid coverage and ending on the final number.

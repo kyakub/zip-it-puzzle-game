@@ -24,7 +24,6 @@ function addEventListeners() {
         undoButton, clearPathButton, resetLevelButton, restartGameButton,
         pauseButton, nextLevelButton, soundToggleButton,
         modalConfirmRestart, modalCancelRestart, restartModalOverlay,
-        puzzleGridElement
     } = dependencies.elements;
 
     undoButton?.addEventListener('click', handleUndo);
@@ -101,59 +100,162 @@ function handleOverlayClick(event) {
 }
 
 export function handleMouseDown(e) {
-    const { isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath, wallPositions } = getState();
+    const { isGameOver, isGenerating, isPaused, isAnimatingClick, currentPath, wallPositions, currentPuzzle, expectedNextValue: initialExpectedNextValue } = getState();
     if (isGameOver || isGenerating || isPaused || isAnimatingClick) return;
 
-    const cell = e.target.closest('.cell');
-    if (!cell) return;
+    const clickedCell = e.target.closest('.cell');
+    if (!clickedCell) return;
 
-    const value = parseInt(cell.dataset.value) || null;
+    const clickedCellValue = parseInt(clickedCell.dataset.value) || null;
     const isPathEmpty = currentPath.length === 0;
+
     const lastPathStep = isPathEmpty ? null : currentPath[currentPath.length - 1];
     const lastCell = lastPathStep?.cell;
 
-    if (isPathEmpty && value === 1) {
-        startDrawing(cell, e);
+    if (isPathEmpty && clickedCellValue === 1) {
+        startDrawing(clickedCell, e);
         return;
     }
 
-    if (!isPathEmpty && cell === lastCell) {
-        startDrawing(cell, e);
+    if (!isPathEmpty && clickedCell === lastCell) {
+        startDrawing(clickedCell, e);
         return;
     }
 
     stopDrawing();
 
-    if (currentPath.length > 1 && cell === currentPath[currentPath.length - 2].cell) {
+    if (!isPathEmpty) {
+        const r_last = parseInt(lastCell.dataset.row);
+        const c_last = parseInt(lastCell.dataset.col);
+        const r_click = parseInt(clickedCell.dataset.row);
+        const c_click = parseInt(clickedCell.dataset.col);
+
+        const isHorizontal = r_click === r_last && c_click !== c_last;
+        const isVertical = c_click === c_last && r_click !== r_last;
+
+        if (isHorizontal || isVertical) {
+            if (!clickedCell.classList.contains('selected')) {
+                const cellsInLine = [];
+                let pathIsClear = true;
+                let currentIterCell = lastCell;
+                let tempExpectedNextValForLine = initialExpectedNextValue;
+
+                if (isHorizontal) {
+                    const step = c_click > c_last ? 1 : -1;
+                    for (let c = c_last + step; ; c += step) {
+                        const nextR = r_click;
+                        const nextC = c;
+
+                        if (utils.isWallBetween(parseInt(currentIterCell.dataset.row), parseInt(currentIterCell.dataset.col), nextR, nextC, wallPositions)) {
+                            pathIsClear = false; break;
+                        }
+                        const interCell = currentPuzzle[nextR]?.[nextC];
+                        if (!interCell || interCell.classList.contains('selected')) {
+                            pathIsClear = false; break;
+                        }
+
+                        const interCellValue = parseInt(interCell.dataset.value) || null;
+                        if (interCellValue !== null) {
+                            if (interCellValue !== tempExpectedNextValForLine) {
+                                pathIsClear = false; break;
+                            }
+                            tempExpectedNextValForLine++;
+                        }
+                        cellsInLine.push(interCell);
+                        currentIterCell = interCell;
+                        if (c === c_click) break;
+                        if ((step > 0 && c > c_click) || (step < 0 && c < c_click)) { pathIsClear = false; break; }
+                    }
+                } else {
+                    const step = r_click > r_last ? 1 : -1;
+                    for (let r = r_last + step; ; r += step) {
+                        const nextR = r;
+                        const nextC = c_click;
+
+                        if (utils.isWallBetween(parseInt(currentIterCell.dataset.row), parseInt(currentIterCell.dataset.col), nextR, nextC, wallPositions)) {
+                            pathIsClear = false; break;
+                        }
+                        const interCell = currentPuzzle[nextR]?.[nextC];
+                        if (!interCell || interCell.classList.contains('selected')) {
+                            pathIsClear = false; break;
+                        }
+                        const interCellValue = parseInt(interCell.dataset.value) || null;
+                        if (interCellValue !== null) {
+                            if (interCellValue !== tempExpectedNextValForLine) {
+                                pathIsClear = false; break;
+                            }
+                            tempExpectedNextValForLine++;
+                        }
+                        cellsInLine.push(interCell);
+                        currentIterCell = interCell;
+                        if (r === r_click) break;
+                        if ((step > 0 && r > r_click) || (step < 0 && r < r_click)) { pathIsClear = false; break; }
+                    }
+                }
+
+                if (pathIsClear && cellsInLine.length > 0 && cellsInLine[cellsInLine.length - 1] === clickedCell) {
+                    logic.addStepsInLine(cellsInLine, dependencies.elements.puzzleGridElement);
+                    return;
+                } else if (!pathIsClear && cellsInLine.length > 0) {
+                    const lastAttemptedCell = cellsInLine[cellsInLine.length - 1];
+                    const lastAttemptedCellValue = parseInt(lastAttemptedCell.dataset.value) || null;
+                    if (lastAttemptedCellValue !== null && lastAttemptedCellValue !== tempExpectedNextValForLine) {
+                        audio.playSound('soundError');
+                        ui.showMessage(`Line blocked: Next number must be ${tempExpectedNextValForLine}.`, null, true);
+                        return;
+                    }
+                }
+            } else if (clickedCell.classList.contains('selected')) {
+                const clickedCellIndexInPath = currentPath.findIndex(step => step.cell === clickedCell);
+                if (clickedCellIndexInPath !== -1 && clickedCellIndexInPath < currentPath.length - 1) {
+                    let isStraightRetractPath = true;
+                    for (let i = clickedCellIndexInPath; i < currentPath.length - 2; i++) {
+                        const p1 = currentPath[i].cell;
+                        const p2 = currentPath[i + 1].cell;
+                        const p3 = currentPath[i + 2].cell;
+                        const r1_path = parseInt(p1.dataset.row); const c1_path = parseInt(p1.dataset.col);
+                        const r2_path = parseInt(p2.dataset.row); const c2_path = parseInt(p2.dataset.col);
+                        const r3_path = parseInt(p3.dataset.row); const c3_path = parseInt(p3.dataset.col);
+                        if ((r1_path - r2_path) * (c2_path - c3_path) !== (c1_path - c2_path) * (r2_path - r3_path)) {
+                            isStraightRetractPath = false;
+                            break;
+                        }
+                    }
+                    if (isStraightRetractPath) {
+                        logic.undoStepsInLine(clickedCell);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    if (currentPath.length > 1 && clickedCell === currentPath[currentPath.length - 2].cell) {
         logic.undoLastStep(false);
         return;
     }
 
-    if (!isPathEmpty && utils.isNeighbor(lastCell, cell) && !cell.classList.contains('selected')) {
-        const r1 = parseInt(lastCell.dataset.row);
-        const c1 = parseInt(lastCell.dataset.col);
-        const r2 = parseInt(cell.dataset.row);
-        const c2 = parseInt(cell.dataset.col);
-        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+    if (!isPathEmpty && utils.isNeighbor(lastCell, clickedCell) && !clickedCell.classList.contains('selected')) {
+        const r1_adj = parseInt(lastCell.dataset.row);
+        const c1_adj = parseInt(lastCell.dataset.col);
+        const r2_adj = parseInt(clickedCell.dataset.row);
+        const c2_adj = parseInt(clickedCell.dataset.col);
+        if (utils.isWallBetween(r1_adj, c1_adj, r2_adj, c2_adj, wallPositions)) {
             audio.playSound('soundError');
             ui.showMessage("Cannot cross a wall.", null, true);
             return;
         }
-        handleAdjacentClick(cell, value);
+        handleAdjacentClick(clickedCell, clickedCellValue);
         return;
     }
 
-    if (!isPathEmpty && !utils.isNeighbor(lastCell, cell) && !cell.classList.contains('selected')) {
+    if (!isPathEmpty && !utils.isNeighbor(lastCell, clickedCell) && !clickedCell.classList.contains('selected')) {
         ui.showMessage("Must select an adjacent cell.", null, true);
         audio.playSound('soundError');
         return;
     }
 
-    if (!isPathEmpty && cell.classList.contains('selected') && cell !== lastCell) {
-        return;
-    }
-
-    if (isPathEmpty && value !== 1) {
+    if (isPathEmpty && clickedCellValue !== 1) {
         ui.showMessage("Path must start on number 1!", null, true);
         audio.playSound('soundError');
         return;
@@ -206,11 +308,11 @@ export function handleMouseMove(e) {
     if (!lastCell || currentCell === lastCell) return;
 
     if (currentPath.length > 1 && currentCell === currentPath[currentPath.length - 2].cell) {
-        const r1 = parseInt(lastCell.dataset.row);
-        const c1 = parseInt(lastCell.dataset.col);
-        const r2 = parseInt(currentCell.dataset.row);
-        const c2 = parseInt(currentCell.dataset.col);
-        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+        const r1_drag = parseInt(lastCell.dataset.row);
+        const c1_drag = parseInt(lastCell.dataset.col);
+        const r2_drag = parseInt(currentCell.dataset.row);
+        const c2_drag = parseInt(currentCell.dataset.col);
+        if (utils.isWallBetween(r1_drag, c1_drag, r2_drag, c2_drag, wallPositions)) {
             return;
         }
         logic.undoLastStep(true);
@@ -220,11 +322,11 @@ export function handleMouseMove(e) {
             ui.updateTempLineEnd(coords);
         }
     } else if (!currentCell.classList.contains('selected') && utils.isNeighbor(lastCell, currentCell)) {
-        const r1 = parseInt(lastCell.dataset.row);
-        const c1 = parseInt(lastCell.dataset.col);
-        const r2 = parseInt(currentCell.dataset.row);
-        const c2 = parseInt(currentCell.dataset.col);
-        if (utils.isWallBetween(r1, c1, r2, c2, wallPositions)) {
+        const r1_drag = parseInt(lastCell.dataset.row);
+        const c1_drag = parseInt(lastCell.dataset.col);
+        const r2_drag = parseInt(currentCell.dataset.row);
+        const c2_drag = parseInt(currentCell.dataset.col);
+        if (utils.isWallBetween(r1_drag, c1_drag, r2_drag, c2_drag, wallPositions)) {
             return;
         }
 
