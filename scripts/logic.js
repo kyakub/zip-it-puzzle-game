@@ -291,12 +291,13 @@ export function startLevel(levelNumber, restoredState = null) {
     ui.hideTempLine();
     ui.togglePauseOverlay(false);
 
-    let level, points, gridRows, gridCols, xCells, timeLimit, initialTime = null;
+    let level, points, gridRows, gridCols, xCells, timeLimit, initialTime = null, savedTimeRemaining;
     let numberPositions = {};
-    let pathPointsData, calculatedCellSizeVal, isPaused, expectedNextValue;
+    let pathPointsData, calculatedCellSizeVal, isPaused, expectedNextValue, isLevelCompletePendingNext = false;
     let wallPositionsSet = new Set();
     let waypointPositionsSet = new Set();
     let currentGradientColorsArr = [...getState().currentGradientColors];
+    let currentIsGameOver = false;
 
     if (restoredState) {
         level = restoredState.level;
@@ -311,15 +312,34 @@ export function startLevel(levelNumber, restoredState = null) {
         waypointPositionsSet = restoredState.waypointPositions;
         currentGradientColorsArr = restoredState.currentGradientColors;
         calculatedCellSizeVal = restoredState.calculatedCellSize;
-        const elapsedSeconds = Math.floor((Date.now() - restoredState.saveTimestamp) / 1000);
-        initialTime = restoredState.timeRemaining - elapsedSeconds;
         isPaused = restoredState.isPaused ?? false;
+        isLevelCompletePendingNext = restoredState.isLevelCompletePendingNext ?? false;
         pathPointsData = restoredState.pathPointsData || [];
+        savedTimeRemaining = restoredState.timeRemaining;
+        currentIsGameOver = isLevelCompletePendingNext;
+
+        if (isLevelCompletePendingNext) {
+            initialTime = savedTimeRemaining;
+        } else if (!isPaused) {
+            const elapsedSeconds = Math.floor((Date.now() - restoredState.saveTimestamp) / 1000);
+            initialTime = savedTimeRemaining - elapsedSeconds;
+        } else {
+            initialTime = savedTimeRemaining;
+        }
 
         updateState({
-            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize: calculatedCellSizeVal,
-            numberPositions, wallPositions: wallPositionsSet, waypointPositions: waypointPositionsSet,
-            currentGradientColors: currentGradientColorsArr, pathPoints: pathPointsData, isPaused, expectedNextValue
+            level, points, gridRows, gridCols, xCells, timeLimit,
+            calculatedCellSize: calculatedCellSizeVal,
+            numberPositions,
+            wallPositions: wallPositionsSet,
+            waypointPositions: waypointPositionsSet,
+            currentGradientColors: currentGradientColorsArr,
+            pathPoints: pathPointsData,
+            currentPath: [],
+            isPaused,
+            expectedNextValue,
+            isLevelCompletePendingNext,
+            isGameOver: currentIsGameOver
         });
         ui.updatePathGradient(currentGradientColorsArr);
 
@@ -335,29 +355,32 @@ export function startLevel(levelNumber, restoredState = null) {
         pathPointsData = [];
         isPaused = false;
         expectedNextValue = 1;
-        updateState({ gridRows, gridCols, calculatedCellSize: calculatedCellSizeVal });
+        isLevelCompletePendingNext = false;
+        initialTime = timeLimit;
+        currentIsGameOver = false;
+
+        updateState({
+            gridRows, gridCols, calculatedCellSize: calculatedCellSizeVal,
+            level, points, xCells, timeLimit,
+            numberPositions: {}, wallPositions: new Set(), waypointPositions: new Set(),
+            currentGradientColors: currentGradientColorsArr, pathPoints: pathPointsData, isPaused, expectedNextValue,
+            isLevelCompletePendingNext, isGameOver: currentIsGameOver
+        });
 
         const shuffledColors = shuffle([...config.GRADIENT_COLORS]);
         currentGradientColorsArr = shuffledColors.slice(0, 2);
         ui.updatePathGradient(currentGradientColorsArr);
-
-        updateState({
-            level, points, gridRows, gridCols, xCells, timeLimit, calculatedCellSize: calculatedCellSizeVal,
-            numberPositions: {}, wallPositions: new Set(), waypointPositions: new Set(),
-            currentGradientColors: currentGradientColorsArr, pathPoints: pathPointsData, isPaused, expectedNextValue
-        });
+        updateState({ currentGradientColors: currentGradientColorsArr });
     }
 
-    if (restoredState && initialTime !== null && initialTime <= 0) {
-        updateState({ timeRemaining: 0 });
+    if (restoredState && initialTime !== null && initialTime <= 0 && !isLevelCompletePendingNext && !isPaused) {
+        updateState({ timeRemaining: 0, isLevelCompletePendingNext: false, isGameOver: true });
         updateUiForNewLevel();
         handleGameOver("Time ran out while away!", true);
-        ui.showGenerationErrorText('Game Over!');
-        ui.disableAllInput();
         return;
     }
 
-    const timeRemainingVal = (restoredState && initialTime !== null && initialTime > 0) ? Math.floor(initialTime) : timeLimit;
+    const timeRemainingVal = (initialTime !== null && initialTime >= 0) ? Math.floor(initialTime) : timeLimit;
     updateState({ timeRemaining: timeRemainingVal });
 
     updateUiForNewLevel();
@@ -371,7 +394,11 @@ export function startLevel(levelNumber, restoredState = null) {
         ui.restorePathUI(getState().currentPath);
         ui.drawNumbersOnSvg(numberPositions, grid, calculatedCellSizeVal);
 
-        if (isPaused) {
+        timer.stopTimer();
+        ui.updateTimerDisplay(timeRemainingVal);
+
+        if (isLevelCompletePendingNext) {
+        } else if (isPaused) {
             ui.togglePauseOverlay(true);
             ui.updatePauseButton(true);
         } else {
@@ -400,6 +427,7 @@ export function startLevel(levelNumber, restoredState = null) {
             finishPuzzleGeneration(hamiltonianPath);
             timer.startTimer();
             ui.updateButtonStates(getState());
+            persistence.saveFullGameState();
         });
     }
 }
@@ -435,6 +463,7 @@ export function addStep(cell, animate = false, puzzleGridElement) {
         ui.updateSvgPath(getState().pathPoints, state.calculatedCellSize);
         checkWinCondition();
         ui.updateButtonStates(getState());
+        if (!getState().isGameOver) persistence.saveFullGameState();
     };
 
     if (animate && state.currentPath.length > 1) {
@@ -448,6 +477,7 @@ export function addStep(cell, animate = false, puzzleGridElement) {
         addPathPoint(targetPointString);
         ui.updateSvgPath(state.pathPoints, state.calculatedCellSize);
         checkWinCondition();
+        if (!getState().isGameOver && !getState().isLevelCompletePendingNext) persistence.saveFullGameState();
     }
     if (!animate) {
         if (state.currentPath.length === 1) {
@@ -475,7 +505,6 @@ export function addStepsInLine(cellsInLine, puzzleGridElement) {
         }
         return;
     }
-
 
     for (const cell of cellsInLine) {
         const cellKey = `${cell.dataset.row}-${cell.dataset.col}`;
@@ -506,6 +535,7 @@ export function addStepsInLine(cellsInLine, puzzleGridElement) {
     const onAnimationComplete = () => {
         checkWinCondition();
         ui.updateButtonStates(getState());
+        if (!getState().isGameOver && !getState().isLevelCompletePendingNext) persistence.saveFullGameState();
     };
 
     if (originalLastPathPointString) {
@@ -547,6 +577,7 @@ export function undoLastStep(isDuringDrag) {
             audio.playSound('soundError');
         }
         ui.updateButtonStates(getState());
+        if (!getState().isGameOver && !getState().isLevelCompletePendingNext) persistence.saveFullGameState();
     }
 }
 
@@ -562,6 +593,7 @@ export function undoStepsInLine(targetCellAsNewLast) {
         if (currentPath.length === 0) break;
     }
     ui.updateButtonStates(getState());
+    if (!getState().isGameOver && !getState().isLevelCompletePendingNext) persistence.saveFullGameState();
 }
 
 
@@ -594,6 +626,7 @@ export function clearPath() {
 
     audio.playSound('soundError');
     ui.updateButtonStates(getState());
+    persistence.saveFullGameState();
 }
 
 function checkWinCondition() {
@@ -633,14 +666,14 @@ function checkWinCondition() {
 }
 
 function handleWin() {
-    updateState({ isGameOver: true });
+    updateState({ isGameOver: true, isLevelCompletePendingNext: true });
     timer.stopTimer();
-    persistence.clearFullGameState();
 
     const newPoints = getState().points + (getState().level * 10) + Math.max(0, getState().timeRemaining);
     updateState({ points: newPoints });
     persistence.savePoints(newPoints);
     ui.updatePointsDisplay(newPoints);
+    persistence.saveFullGameState();
 
     ui.showMessage(`Level ${getState().level} Complete! Points: ${newPoints}`);
     audio.playSound('soundWin');
@@ -663,8 +696,8 @@ function handleIncorrectFinish(correctSequence, endCorrect, allWaypointsVisited 
 }
 
 export function handleGameOver(reason, fromLoad = false) {
-    if (getState().isGameOver) return;
-    updateState({ isGameOver: true, isDrawing: false });
+    if (getState().isGameOver && !getState().isLevelCompletePendingNext) return;
+    updateState({ isGameOver: true, isDrawing: false, isLevelCompletePendingNext: false });
     timer.stopTimer();
     ui.clearClickAnimation();
     ui.hideTempLine();
@@ -685,14 +718,16 @@ export function handleTimeUp() {
 }
 
 export function requestResetLevel() {
-    const { isGenerating, isGameOver, isPaused, level, points } = getState();
-    if (isGenerating || isGameOver || isPaused) return;
+    const { isGenerating, isGameOver, isPaused, level, points, isLevelCompletePendingNext } = getState();
+    if (isGenerating || (isGameOver && !isLevelCompletePendingNext) || isPaused) return;
 
-    if (level > 1 && points < config.RESET_PENALTY) {
+    if (level > 1 && points < config.RESET_PENALTY && !isLevelCompletePendingNext) {
         ui.showMessage(`Need ${config.RESET_PENALTY} points to reset!`, null, true);
         audio.playSound('soundError');
         return;
     }
+    if (isLevelCompletePendingNext) { return; }
+
 
     let penaltyMsg = "";
     if (level > 1) {
@@ -706,13 +741,14 @@ export function requestResetLevel() {
     persistence.clearFullGameState();
     timer.stopTimer();
     terminateWorker();
+    updateState({ isLevelCompletePendingNext: false, isGameOver: false });
     startLevel(level);
     ui.showMessage(`Level Reset! ${penaltyMsg}`);
 }
 
 export function requestNextLevel() {
     const state = getState();
-    if (state.isGenerating || !state.isGameOver || state.isPaused) return;
+    if (state.isGenerating || !state.isGameOver || state.isPaused || !state.isLevelCompletePendingNext) return;
 
     const lastCell = state.currentPath?.[state.currentPath.length - 1]?.cell;
     const lastCellValue = lastCell ? parseInt(lastCell.dataset.value) : NaN;
@@ -729,13 +765,14 @@ export function requestNextLevel() {
 
     if (lastCellValue === state.xCells && state.currentPath.length === targetPathLength && state.expectedNextValue > state.xCells && allWaypointsVisited) {
         persistence.clearFullGameState();
+        updateState({ isLevelCompletePendingNext: false, isGameOver: false });
         const nextLevelNum = state.level + 1;
         updateState({ level: nextLevelNum });
         persistence.saveLevel(nextLevelNum);
         startLevel(nextLevelNum);
     } else {
         ui.showMessage("Win condition error. Cannot proceed.", null, true);
-        updateState({ isGameOver: false });
+        updateState({ isGameOver: false, isLevelCompletePendingNext: false });
         ui.updateButtonStates(getState());
     }
 }
@@ -756,8 +793,9 @@ export function performRestart() {
 }
 
 export function togglePause() {
-    const { isGameOver, isGenerating, isPaused } = getState();
-    if (isGameOver || isGenerating) return;
+    const { isGameOver, isGenerating, isPaused, isLevelCompletePendingNext } = getState();
+    if ((isGameOver && !isLevelCompletePendingNext) || isGenerating) return;
+    if (isLevelCompletePendingNext) return;
 
     if (isPaused) {
         continueGame();
@@ -767,8 +805,8 @@ export function togglePause() {
 }
 
 function pauseGame(saveState = true) {
-    const { isPaused, isGameOver, isGenerating } = getState();
-    if (isPaused || isGameOver || isGenerating) return;
+    const { isPaused, isGameOver, isGenerating, isLevelCompletePendingNext } = getState();
+    if (isPaused || (isGameOver && !isLevelCompletePendingNext) || isGenerating || isLevelCompletePendingNext) return;
 
     updateState({ isDrawing: false, isPaused: true });
     ui.clearClickAnimation();
@@ -785,20 +823,22 @@ function pauseGame(saveState = true) {
 }
 
 function continueGame() {
-    const { isPaused, isGameOver, isGenerating } = getState();
-    if (!isPaused || isGameOver || isGenerating) return;
+    const { isPaused, isGameOver, isGenerating, isLevelCompletePendingNext } = getState();
+    if (!isPaused || (isGameOver && !isLevelCompletePendingNext) || isGenerating || isLevelCompletePendingNext) return;
 
     updateState({ isPaused: false });
     ui.togglePauseOverlay(false);
     ui.showMessage('Game Continued');
-    timer.startTimer();
+    if (!isLevelCompletePendingNext && !getState().isGameOver) {
+        timer.startTimer();
+    }
     ui.updatePauseButton(false);
     ui.updateButtonStates(getState());
 }
 
 export function autoPause() {
-    const { isGameOver, isGenerating, isPaused } = getState();
-    if (document.hidden && !isGameOver && !isGenerating && !isPaused) {
+    const { isGameOver, isGenerating, isPaused, isLevelCompletePendingNext } = getState();
+    if (document.hidden && !(isGameOver && !isLevelCompletePendingNext) && !isGenerating && !isPaused && !isLevelCompletePendingNext) {
         pauseGame();
     }
 }

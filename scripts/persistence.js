@@ -28,7 +28,7 @@ export function removeData(key) {
 
 export function saveFullGameState() {
     const state = getState();
-    if (state.isGameOver || state.isGenerating) {
+    if (state.isGenerating || (state.isGameOver && !state.isLevelCompletePendingNext)) {
         clearFullGameState();
         return;
     }
@@ -55,7 +55,8 @@ export function saveFullGameState() {
         currentPathData: pathData,
         pathPointsData: state.pathPoints,
         isMuted: state.isMuted,
-        isPaused: state.isPaused
+        isPaused: state.isPaused,
+        isLevelCompletePendingNext: state.isLevelCompletePendingNext
     };
     saveData(config.STORAGE_KEY_GAME_STATE, JSON.stringify(stateToSave));
 }
@@ -72,6 +73,7 @@ export function loadFullGameState() {
             && parsedState.numberPositions
             && Array.isArray(parsedState.wallPositions)
             && Array.isArray(parsedState.waypointPositions)
+            && typeof parsedState.isLevelCompletePendingNext === 'boolean'
             && Array.isArray(parsedState.currentGradientColors)
             && parsedState.currentGradientColors.length === 2) {
             removeData(config.STORAGE_KEY_GAME_STATE);
@@ -79,7 +81,7 @@ export function loadFullGameState() {
             parsedState.waypointPositions = new Set(parsedState.waypointPositions);
             return parsedState;
         } else {
-            console.warn("Invalid saved state found, clearing.");
+            console.warn("Invalid saved state found (check persistence flags?), clearing.");
             clearFullGameState();
             return null;
         }

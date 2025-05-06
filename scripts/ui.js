@@ -244,37 +244,57 @@ export function showGenerationErrorText(message) {
 }
 
 export function updateButtonStates(state) {
-    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue, waypointPositions } = state;
-    const canInteract = !isGameOver && !isGenerating && !isPaused && !isAnimatingClick;
-    const canPause = !isGameOver && !isGenerating;
-    const targetPathLength = gridRows * gridCols;
+    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue, waypointPositions, isLevelCompletePendingNext } = state;
 
-    let allWaypointsVisited = true;
-    if (isGameOver && waypointPositions.size > 0) {
-        const visitedCoords = new Set(currentPath.map(step => `${step.cell.dataset.row}-${step.cell.dataset.col}`));
-        for (const waypointCoord of waypointPositions) {
-            if (!visitedCoords.has(waypointCoord)) {
-                allWaypointsVisited = false;
-                break;
+    const canInteractGeneral = !isGameOver && !isGenerating && !isPaused && !isAnimatingClick;
+    const canPause = !isGenerating && !(isGameOver && !isLevelCompletePendingNext) && !isLevelCompletePendingNext;
+
+    let isGameEffectivelyWon = false;
+    if (isLevelCompletePendingNext && isGameOver) {
+        isGameEffectivelyWon = true;
+    } else if (!isGameOver && !isGenerating && !isPaused) {
+        const targetPathLength = gridRows * gridCols;
+        let allWaypointsVisitedOnCheck = true;
+        if (waypointPositions.size > 0 && currentPath.length === targetPathLength) {
+            const visitedCoords = new Set(currentPath.map(step => `${step.cell.dataset.row}-${step.cell.dataset.col}`));
+            for (const waypointCoord of waypointPositions) {
+                if (!visitedCoords.has(waypointCoord)) {
+                    allWaypointsVisitedOnCheck = false;
+                    break;
+                }
             }
+        } else if (waypointPositions.size > 0 && currentPath.length < targetPathLength) {
+            allWaypointsVisitedOnCheck = false;
+        } else if (waypointPositions.size === 0 && currentPath.length < targetPathLength) {
+            allWaypointsVisitedOnCheck = true;
         }
-    } else if (waypointPositions.size > 0 && !isGameOver) {
-        allWaypointsVisited = false;
+
+
+        isGameEffectivelyWon = currentPath.length === targetPathLength && expectedNextValue > xCells && allWaypointsVisitedOnCheck;
     }
 
-    const isGameWon = isGameOver && currentPath.length === targetPathLength && expectedNextValue > xCells && allWaypointsVisited;
 
-    elements.undoButton.disabled = !canInteract || currentPath.length <= 0;
-    elements.clearPathButton.disabled = !canInteract || currentPath.length === 0;
-    elements.resetLevelButton.disabled = !canInteract || (level > 1 && points < config.RESET_PENALTY);
+    const canInteractActivePlay = canInteractGeneral && !isLevelCompletePendingNext;
+
+    elements.undoButton.disabled = !canInteractActivePlay || currentPath.length <= 0;
+    elements.clearPathButton.disabled = !canInteractActivePlay || currentPath.length === 0;
+
+    let resetDisabled = isGenerating || isPaused || (isGameOver && !isLevelCompletePendingNext);
+    if (!resetDisabled && !isLevelCompletePendingNext && level > 1 && points < config.RESET_PENALTY) {
+        resetDisabled = true;
+    }
+    if (isLevelCompletePendingNext) resetDisabled = true;
+    elements.resetLevelButton.disabled = resetDisabled;
+
     elements.pauseButton.disabled = !canPause;
-    elements.restartGameButton.disabled = false;
-    elements.nextLevelButton.disabled = !isGameWon;
+    elements.restartGameButton.disabled = isGenerating;
 
+    elements.nextLevelButton.disabled = !isGameEffectivelyWon || !isGameOver;
     if (elements.nextLevelButton) {
-        elements.nextLevelButton.style.display = isGameWon ? 'inline-block' : 'none';
+        elements.nextLevelButton.style.display = (isGameEffectivelyWon && isGameOver) ? 'inline-block' : 'none';
     }
 }
+
 
 export function disableAllInput() {
     elements.undoButton.disabled = true;

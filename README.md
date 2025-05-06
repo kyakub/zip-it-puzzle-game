@@ -26,7 +26,7 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
     *   **Reset Level:** Restarts the current level attempt. Costs **10 points** (unless on Level 1 or points < 10). Keeps level number (cannot be used while paused).
     *   **Restart Game:** Confirms via modal, then resets game to Level 1, Points 0 and starts the new game immediately.
     *   **Pause/Continue:** Pauses the timer and saves the game state. Click again to resume. Game also auto-pauses if you switch browser tabs or minimize the window. A visual overlay indicates the paused state.
-    *   **Next Level:** Appears only after completing a level successfully (including visiting all waypoints).
+    *   **Next Level:** Appears only after completing a level successfully (including visiting all waypoints). The state of the completed level is saved if the page is refreshed before clicking "Next Level".
     *   **Sound: On/Off:** Toggles game sound effects. Preference is saved.
 
 ## Features
@@ -42,7 +42,7 @@ Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 *   Progressive difficulty across levels (grid size, numbers, walls, waypoints).
 *   Timed challenge per level with **Pause/Continue** & auto-pause.
 *   Scoring system: Points for level completion + time bonus; penalty for resetting.
-*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout (walls, waypoints), path progress, and pause state locally.
+*   **Full Game State Persistence:** Saves level, points, timer, puzzle layout (walls, waypoints), path progress, and pause state locally. Completed level state is also persisted until "Next Level" is clicked.
 *   Sound effects toggle with saved preference.
 *   Undo (button and click-back) and Clear Path functionality.
 *   Clear visual feedback (path lines scale, distinct walls, gradient path, waypoints).
