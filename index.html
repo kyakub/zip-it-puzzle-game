@@ -8,8 +8,7 @@
     <link rel="icon" type="image/png" href="assets/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/style.css">
 </head>
 
@@ -32,13 +31,11 @@
             <div id="puzzleGrid" class="puzzle-grid"></div>
             <svg id="pathSvg" class="path-svg">
                 <defs>
-                    <!-- Simplified to 2 stops with IDs -->
                     <linearGradient id="pathGradient" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
                         <stop id="gradStop1" offset="0%" stop-color="#ff8a00" />
                         <stop id="gradStop2" offset="100%" stop-color="#873cff" />
                     </linearGradient>
                 </defs>
-                <!-- The <polyline> and <line> elements will be added here by ui.js -->
             </svg>
             <svg id="numbersSvg" class="numbers-svg"></svg>
             <div id="pauseOverlay" class="pause-overlay">

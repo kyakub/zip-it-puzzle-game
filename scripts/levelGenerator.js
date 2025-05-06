@@ -4,7 +4,6 @@ import * as ui from './ui.js';
 import * as logic from './logic.js';
 import * as timer from './timer.js';
 
-// Removed obstaclePositions from signature
 export function generateLevelAsync(gridRows, gridCols, onComplete) {
     updateState({ isGenerating: true });
     ui.showGeneratingText();
@@ -26,7 +25,7 @@ export function generateLevelAsync(gridRows, gridCols, onComplete) {
             updateState({ isGenerating: false });
             terminateWorker();
             if (event.data.success) {
-                onComplete(event.data.path); // Path is now standard Hamiltonian path
+                onComplete(event.data.path);
             } else {
                 console.error("Main: Path generation failed.", event.data.reason || event.data.error);
                 const reason = event.data.reason || event.data.error || 'Unknown Error';
@@ -46,12 +45,10 @@ export function generateLevelAsync(gridRows, gridCols, onComplete) {
             ui.disableAllInput();
         };
 
-        // Send only grid dimensions and attempts
         worker.postMessage({
             gridRows: gridRows,
             gridCols: gridCols,
             maxAttempts: config.MAX_HAMILTONIAN_ATTEMPTS
-            // Removed obstaclePositions
         });
 
     } catch (e) {

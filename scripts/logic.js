@@ -28,23 +28,19 @@ function getDirection(r1, c1, r2, c2) {
     return null;
 }
 
-// --- Sophisticated Placement Helpers ---
-
-// Check how many non-path, non-wall borders a cell has (potential exits)
 function countOpenNeighbors(r, c, wallPositions, pathSegments) {
     let openCount = 0;
     const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
     const { gridRows, gridCols } = getState();
 
     for (const [nr, nc] of neighbors) {
-        if (isValid(nr, nc)) { // Check grid bounds first
+        if (isValid(nr, nc)) {
             let wallKey;
-            if (nr !== r) { // Vertical move check
+            if (nr !== r) {
                 wallKey = `H_${Math.min(r, nr)}_${c}`;
-            } else { // Horizontal move check
+            } else {
                 wallKey = `V_${r}_${Math.min(c, nc)}`;
             }
-            // It's an open neighbor if there's no wall AND the path doesn't use this segment
             if (!wallPositions.has(wallKey) && !pathSegments.has(wallKey)) {
                 openCount++;
             }
@@ -53,27 +49,22 @@ function countOpenNeighbors(r, c, wallPositions, pathSegments) {
     return openCount;
 }
 
-
 function calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, numberCoords, allowedWallLocationsSet) {
-    let score = Math.random() * 0.5; // Base random score for tie-breaking
+    let score = Math.random() * 0.5;
     const wallType = wallKey[0];
     const [r, c] = wallKey.substring(2).split('_').map(Number);
 
-    let r1, c1, r2, c2; // Coords of the two cells separated by the wall
+    let r1, c1, r2, c2;
     if (wallType === 'H') { r1 = r; c1 = c; r2 = r + 1; c2 = c; }
     else { r1 = r; c1 = c; r2 = r; c2 = c + 1; }
 
     const cell1Str = `${r1}-${c1}`;
     const cell2Str = `${r2}-${c2}`;
 
-    // --- Scoring Criteria ---
-
-    // 1. Proximity to Turns (High Impact)
     if (turnCells.has(cell1Str) || turnCells.has(cell2Str)) {
         score += 5;
     }
 
-    // 2. Proximity to Numbers (Medium Impact, higher for non-start/end)
     let numberProximityScore = 0;
     if (numberCoords.has(cell1Str)) {
         const numValue = numberCoords.get(cell1Str);
@@ -85,35 +76,28 @@ function calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, number
     }
     score += numberProximityScore;
 
-    // 3. Blocking Parallel Path (Medium-High Impact)
-    // Check if this wall runs parallel and adjacent to a path segment
     let parallelSegmentKey = null;
-    if (wallType === 'H') { // Horizontal wall, check for path segment below or above
-        parallelSegmentKey = `H_${r1 - 1}_${c1}`; // Path segment above?
+    if (wallType === 'H') {
+        parallelSegmentKey = `H_${r1 - 1}_${c1}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
-        parallelSegmentKey = `H_${r2}_${c2}`; // Path segment below?
+        parallelSegmentKey = `H_${r2}_${c2}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
-    } else { // Vertical wall, check for path segment left or right
-        parallelSegmentKey = `V_${r1}_${c1 - 1}`; // Path segment left?
+    } else {
+        parallelSegmentKey = `V_${r1}_${c1 - 1}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
-        parallelSegmentKey = `V_${r2}_${c2}`; // Path segment right?
+        parallelSegmentKey = `V_${r2}_${c2}`;
         if (pathSegments.has(parallelSegmentKey)) score += 3;
     }
 
-    // 4. Creating Bottlenecks (Lower Impact - Crude Approximation)
-    // If placing this wall reduces open neighbors for either cell
-    // Note: This is a simplified check; true bottleneck analysis is complex
-    const openNeighbors1 = countOpenNeighbors(r1, c1, new Set([wallKey]), pathSegments); // Check as if wall exists
+    const openNeighbors1 = countOpenNeighbors(r1, c1, new Set([wallKey]), pathSegments);
     const openNeighbors2 = countOpenNeighbors(r2, c2, new Set([wallKey]), pathSegments);
-    if (openNeighbors1 <= 1 || openNeighbors2 <= 1) { // If placing wall leaves 1 or 0 exits
+    if (openNeighbors1 <= 1 || openNeighbors2 <= 1) {
         score += 1;
     }
 
     return score;
 }
 
-
-// Updated function to use scoring
 function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     const walls = new Set();
     const pathSegments = new Set();
@@ -144,14 +128,14 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     const allowedWallLocations = possibleWalls.filter(wallKey => !pathSegments.has(wallKey));
     const allowedWallLocationsSet = new Set(allowedWallLocations);
 
-    if (allowedWallLocations.length === 0) return walls; // No place for walls
+    if (allowedWallLocations.length === 0) return walls;
 
     const scoredWalls = allowedWallLocations.map(wallKey => ({
         key: wallKey,
         score: calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, numberCoords, allowedWallLocationsSet)
     }));
 
-    scoredWalls.sort((a, b) => b.score - a.score); // Sort descending by score
+    scoredWalls.sort((a, b) => b.score - a.score);
 
     for (let i = 0; i < Math.min(numWalls, scoredWalls.length); i++) {
         walls.add(scoredWalls[i].key);
@@ -160,23 +144,19 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     return walls;
 }
 
-
-// Updated to place waypoints more strategically
 function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions, numWaypoints) {
     const waypoints = new Set();
     const emptyPathCells = hamiltonianPath.filter(coord => !numberCoords.has(coord));
 
     if (numWaypoints <= 0 || emptyPathCells.length < numWaypoints) {
-        return waypoints; // Not enough candidates or not needed
+        return waypoints;
     }
 
-    // --- Scoring for Waypoints ---
     const scoredCandidates = emptyPathCells.map(coord => {
         const [r, c] = parseCoord(coord);
-        let score = Math.random() * 0.5; // Base random score
+        let score = Math.random() * 0.5;
 
-        // 1. Prioritize cells in bottlenecks (few non-wall, non-path neighbors)
-        const pathSegments = new Set(); // Need to recalculate path segments locally
+        const pathSegments = new Set();
         for (let i = 0; i < hamiltonianPath.length - 1; i++) {
             const [r1, c1] = parseCoord(hamiltonianPath[i]);
             const [r2, c2] = parseCoord(hamiltonianPath[i + 1]);
@@ -186,10 +166,9 @@ function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions,
             pathSegments.add(segmentKey);
         }
         const openNeighbors = countOpenNeighbors(r, c, wallPositions, pathSegments);
-        if (openNeighbors === 1) score += 5; // Highest priority for dead ends (forced turns) created by walls
-        else if (openNeighbors === 2) score += 3; // High priority for corridor cells
+        if (openNeighbors === 1) score += 5;
+        else if (openNeighbors === 2) score += 3;
 
-        // 2. Prioritize cells roughly between numbers
         const currentIndex = hamiltonianPath.indexOf(coord);
         let distToPrevNum = Infinity;
         let distToNextNum = Infinity;
@@ -205,11 +184,9 @@ function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions,
                 break;
             }
         }
-        // Higher score if reasonably far from both numbers
         if (distToPrevNum > 3 && distToNextNum > 3) {
             score += 1;
         }
-        // Slightly higher score if it's roughly in the middle
         if (distToPrevNum > 1 && distToNextNum > 1 && Math.abs(distToPrevNum - distToNextNum) <= 2) {
             score += 0.5;
         }
@@ -217,17 +194,14 @@ function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions,
         return { coord: coord, score: score };
     });
 
-    // Sort by score descending
     scoredCandidates.sort((a, b) => b.score - a.score);
 
-    // Select top N candidates
     for (let i = 0; i < Math.min(numWaypoints, scoredCandidates.length); i++) {
         waypoints.add(scoredCandidates[i].coord);
     }
 
     return waypoints;
 }
-
 
 function finishPuzzleGeneration(hamiltonianPath) {
     const { gridRows, gridCols, calculatedCellSize, wallPositions, numberPositions, waypointPositions } = getState();
@@ -261,16 +235,13 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
     if (xCells > 2) {
         const intermediatePathIndices = Array.from({ length: pathLength - 2 }, (_, i) => i + 1);
 
-        // More strategic placement - try to space them out more
         let availableIndices = [...intermediatePathIndices];
-        shuffle(availableIndices); // Still shuffle to pick candidates
+        shuffle(availableIndices);
         const chosenIndices = [];
         const numIntermediate = xCells - 2;
-        const idealSpacing = Math.floor(pathLength / (xCells - 1)); // Approx spacing
+        const idealSpacing = Math.floor(pathLength / (xCells - 1));
 
         let lastPlacedIndex = 0;
-        // Try to pick points that are roughly idealSpacing apart
-        // This is a heuristic, not perfect
         while (chosenIndices.length < numIntermediate && availableIndices.length > 0) {
             let bestCandidateIndex = -1;
             let bestDistDiff = Infinity;
@@ -280,12 +251,11 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
                 const dist = currentIdx - lastPlacedIndex;
                 const distDiff = Math.abs(dist - idealSpacing);
 
-                if (dist > 2) { // Ensure not too close to previous
+                if (dist > 2) {
                     if (bestCandidateIndex === -1 || distDiff < bestDistDiff) {
                         bestDistDiff = distDiff;
                         bestCandidateIndex = i;
                     } else if (distDiff === bestDistDiff && Math.random() > 0.5) {
-                        // Randomly break ties for same distance difference
                         bestCandidateIndex = i;
                     }
                 }
@@ -296,16 +266,14 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
                 chosenIndices.push(chosenIdx);
                 lastPlacedIndex = chosenIdx;
             } else {
-                // If no suitable spaced candidate found, just pick one randomly
                 if (availableIndices.length > 0) {
-                    const chosenIdx = availableIndices.pop(); // Get last random one
+                    const chosenIdx = availableIndices.pop();
                     chosenIndices.push(chosenIdx);
-                    lastPlacedIndex = chosenIdx; // Update lastPlacedIndex anyway
+                    lastPlacedIndex = chosenIdx;
                 }
             }
         }
 
-        // Sort the chosen indices to place numbers in order
         chosenIndices.sort((a, b) => a - b);
 
         for (let i = 0; i < chosenIndices.length; i++) {
@@ -315,7 +283,6 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
     }
     return numberPositions;
 }
-
 
 export function startLevel(levelNumber, restoredState = null) {
     resetLevelState();
@@ -420,7 +387,7 @@ export function startLevel(levelNumber, restoredState = null) {
         levelGenerator.generateLevelAsync(gridRows, gridCols, (hamiltonianPath) => {
             const tentativeNumberCoords = getTentativeNumberPositions(hamiltonianPath, xCells, gridRows, gridCols);
             const newWallPositions = generateWallPositions(hamiltonianPath, currentLevelParams.numWalls, gridRows, gridCols, tentativeNumberCoords);
-            const newWaypointPositions = generateWaypointPositions(hamiltonianPath, tentativeNumberCoords, newWallPositions, currentLevelParams.numWaypoints); // Pass walls here
+            const newWaypointPositions = generateWaypointPositions(hamiltonianPath, tentativeNumberCoords, newWallPositions, currentLevelParams.numWaypoints);
             const finalNumberPositions = {};
             tentativeNumberCoords.forEach((value, key) => { finalNumberPositions[key] = value; });
 
@@ -551,7 +518,6 @@ export function clearPath() {
     audio.playSound('soundError');
     ui.updateButtonStates(getState());
 }
-
 
 function checkWinCondition() {
     const state = getState();
@@ -711,7 +677,6 @@ export function performRestart() {
     startLevel(1);
     ui.showMessage("Game Restarted!");
 }
-
 
 export function togglePause() {
     const { isGameOver, isGenerating, isPaused } = getState();

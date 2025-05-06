@@ -68,10 +68,10 @@ export function isWallBetween(r1, c1, r2, c2, wallPositions) {
         return false;
     }
     let wallKey;
-    if (r1 === r2) { // Moving horizontally
+    if (r1 === r2) {
         const leftCol = Math.min(c1, c2);
         wallKey = `V_${r1}_${leftCol}`;
-    } else { // Moving vertically
+    } else {
         const topRow = Math.min(r1, r2);
         wallKey = `H_${topRow}_${c1}`;
     }

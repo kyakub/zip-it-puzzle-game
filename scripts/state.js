@@ -12,7 +12,7 @@ let gameState = {
     pathPoints: [],
     numberPositions: {},
     wallPositions: new Set(),
-    waypointPositions: new Set(), // Added waypoints
+    waypointPositions: new Set(),
     currentGradientColors: ["#ff8a00", "#873cff"],
     svgNumberElements: {},
     gamePathPolyline: null,
@@ -39,7 +39,7 @@ export function updateState(newState) {
         newState.wallPositions = new Set(newState.wallPositions);
     }
     if (newState.waypointPositions && !(newState.waypointPositions instanceof Set)) {
-        newState.waypointPositions = new Set(newState.waypointPositions); // Handle loading waypoints
+        newState.waypointPositions = new Set(newState.waypointPositions);
     }
     if (newState.currentGradientColors && !Array.isArray(newState.currentGradientColors)) {
         newState.currentGradientColors = ["#ff8a00", "#873cff"];
@@ -58,7 +58,7 @@ export function resetLevelState() {
         pathPoints: [],
         numberPositions: {},
         wallPositions: new Set(),
-        waypointPositions: new Set(), // Reset waypoints
+        waypointPositions: new Set(),
         svgNumberElements: {},
         expectedNextValue: 1,
         currentPuzzle: [],
@@ -79,7 +79,7 @@ export function resetFullGameState() {
         pathPoints: [],
         numberPositions: {},
         wallPositions: new Set(),
-        waypointPositions: new Set(), // Reset waypoints
+        waypointPositions: new Set(),
         currentGradientColors: ["#ff8a00", "#873cff"],
         svgNumberElements: {},
         expectedNextValue: 1,

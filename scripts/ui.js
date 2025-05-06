@@ -25,7 +25,6 @@ function ensureSvgElements() {
         elements.pathSvgElement.appendChild(line);
         updateState({ tempLineElement: line });
     }
-    // Don't clear SVG path here initially, do it in startLevel/clearPath
 }
 
 export function updateLevelDisplay(level) {
@@ -57,8 +56,8 @@ export function updatePauseButton(isPaused) {
 
 export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallPositions, waypointPositions, inputHandlers) {
     elements.puzzleGridElement.innerHTML = '';
-    elements.numbersSvgElement.innerHTML = ''; // Clear numbers SVG specifically here
-    setSvgElements({}); // Reset SVG elements mapping
+    elements.numbersSvgElement.innerHTML = '';
+    setSvgElements({});
 
     elements.puzzleGridElement.style.minHeight = '';
     elements.puzzleGridElement.style.minWidth = '';
@@ -133,22 +132,19 @@ export function updateSvgPath(pathPoints, cellSize) {
     }
 }
 
-// Modified function: Only clear path-related elements
 export function clearSvgPath() {
     const { gamePathPolyline, tempLineElement } = getState();
     if (gamePathPolyline) {
-        gamePathPolyline.setAttribute('points', ''); // Clear polyline points
+        gamePathPolyline.setAttribute('points', '');
     }
-    clearClickAnimation(); // Clear any temporary animation lines
+    clearClickAnimation();
     if (tempLineElement) {
-        tempLineElement.style.visibility = 'hidden'; // Hide drag line
+        tempLineElement.style.visibility = 'hidden';
     }
-    // DO NOT clear numbersSvgElement here
 }
 
-
 export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
-    elements.numbersSvgElement.innerHTML = ''; // Clear previous numbers
+    elements.numbersSvgElement.innerHTML = '';
     const newSvgElements = {};
     const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275));
     const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28));
@@ -165,7 +161,6 @@ export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
         circle.setAttribute('cy', center.y);
         circle.setAttribute('r', circleRadius);
         circle.classList.add('number-circle-bg');
-        // Check if the corresponding cell is selected to style the number correctly
         if (cellElement.classList.contains('selected')) {
             circle.classList.add('selected');
         }
@@ -181,9 +176,8 @@ export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
         elements.numbersSvgElement.appendChild(text);
         newSvgElements[cellKey] = { circle, text };
     }
-    setSvgElements(newSvgElements); // Update the stored references
+    setSvgElements(newSvgElements);
 }
-
 
 export function updateSvgNumberSelection(cellKey, isSelected) {
     const { svgNumberElements } = getState();
@@ -211,11 +205,11 @@ export function showGeneratingText() {
     const currentHeight = gridRows * calculatedCellSize;
     const currentWidth = gridCols * calculatedCellSize;
 
-    clearSvgPath(); // Clears only path elements now
-    if (elements.numbersSvgElement) { // Explicitly clear numbers SVG too
+    clearSvgPath();
+    if (elements.numbersSvgElement) {
         elements.numbersSvgElement.innerHTML = '';
     }
-    setSvgElements({}); // Reset number element references
+    setSvgElements({});
 
     elements.puzzleGridElement.innerHTML = '';
     elements.puzzleGridElement.style.minHeight = `${currentHeight || 100}px`;
@@ -228,7 +222,6 @@ export function showGeneratingText() {
     generatingDiv.innerHTML = 'Generating Level...<br/>Please Wait';
     elements.puzzleGridElement.appendChild(generatingDiv);
 }
-
 
 export function showGenerationErrorText(message) {
     const { gridRows, gridCols, calculatedCellSize } = getState();
@@ -249,7 +242,6 @@ export function showGenerationErrorText(message) {
     errorDiv.textContent = message;
     elements.puzzleGridElement.appendChild(errorDiv);
 }
-
 
 export function updateButtonStates(state) {
     const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue, waypointPositions } = state;
@@ -398,7 +390,6 @@ export function updateTempLineEnd(coords) {
         tempLineElement.setAttribute('y2', targetY);
     }
 }
-
 
 export function hideTempLine() {
     const { tempLineElement } = getState();
