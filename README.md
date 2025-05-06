@@ -4,6 +4,8 @@ A challenging, responsive, web-based puzzle game where you must connect numbered
 
 Built with HTML, CSS, and modern JavaScript (ES6 Modules).
 
+<img src="assets/game_screen_01.png" width="420"/>
+
 ## How to Play
 
 1.  **Start:** Click/Tap on the cell containing '1'. This selects the first cell.
