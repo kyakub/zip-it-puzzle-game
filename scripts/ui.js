@@ -25,7 +25,7 @@ function ensureSvgElements() {
         elements.pathSvgElement.appendChild(line);
         updateState({ tempLineElement: line });
     }
-    clearSvgPath();
+    // Don't clear SVG path here initially, do it in startLevel/clearPath
 }
 
 export function updateLevelDisplay(level) {
@@ -55,11 +55,13 @@ export function updatePauseButton(isPaused) {
     }
 }
 
-export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallPositions, inputHandlers) {
+export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallPositions, waypointPositions, inputHandlers) {
     elements.puzzleGridElement.innerHTML = '';
-    elements.numbersSvgElement.innerHTML = '';
-    setSvgElements({});
+    elements.numbersSvgElement.innerHTML = ''; // Clear numbers SVG specifically here
+    setSvgElements({}); // Reset SVG elements mapping
 
+    elements.puzzleGridElement.style.minHeight = '';
+    elements.puzzleGridElement.style.minWidth = '';
     elements.puzzleGridElement.style.gridTemplateRows = `repeat(${gridRows}, ${cellSize}px)`;
     elements.puzzleGridElement.style.gridTemplateColumns = `repeat(${gridCols}, ${cellSize}px)`;
     elements.puzzleGridElement.style.setProperty('--cell-size', `${cellSize}px`);
@@ -83,6 +85,13 @@ export function buildGridUI(gridRows, gridCols, cellSize, numberPositions, wallP
                 cell.classList.add('wall-right');
             }
 
+            if (waypointPositions.has(cellKey)) {
+                cell.classList.add('waypoint');
+                const marker = document.createElement('span');
+                marker.classList.add('waypoint-marker');
+                cell.appendChild(marker);
+            }
+
             cell.addEventListener('mousemove', inputHandlers.handleMouseMove);
             cell.addEventListener('mousedown', inputHandlers.handleMouseDown);
             cell.addEventListener('touchstart', inputHandlers.handleTouchStart, { passive: true });
@@ -99,6 +108,9 @@ export function restorePathUI(currentPath) {
     currentPath.forEach(step => {
         if (step && step.cell) {
             step.cell.classList.add('selected');
+            if (step.cell.classList.contains('waypoint')) {
+                step.cell.classList.add('waypoint-visited');
+            }
             const cellKey = `${step.cell.dataset.row}-${step.cell.dataset.col}`;
             updateSvgNumberSelection(cellKey, true);
         }
@@ -121,19 +133,22 @@ export function updateSvgPath(pathPoints, cellSize) {
     }
 }
 
+// Modified function: Only clear path-related elements
 export function clearSvgPath() {
     const { gamePathPolyline, tempLineElement } = getState();
     if (gamePathPolyline) {
-        gamePathPolyline.setAttribute('points', '');
+        gamePathPolyline.setAttribute('points', ''); // Clear polyline points
     }
-    clearClickAnimation();
+    clearClickAnimation(); // Clear any temporary animation lines
     if (tempLineElement) {
-        tempLineElement.style.visibility = 'hidden';
+        tempLineElement.style.visibility = 'hidden'; // Hide drag line
     }
+    // DO NOT clear numbersSvgElement here
 }
 
+
 export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
-    elements.numbersSvgElement.innerHTML = '';
+    elements.numbersSvgElement.innerHTML = ''; // Clear previous numbers
     const newSvgElements = {};
     const circleRadius = Math.min(14, Math.max(9, cellSize * 0.275));
     const fontSize = Math.min(13, Math.max(9.8, cellSize * 0.28));
@@ -150,6 +165,7 @@ export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
         circle.setAttribute('cy', center.y);
         circle.setAttribute('r', circleRadius);
         circle.classList.add('number-circle-bg');
+        // Check if the corresponding cell is selected to style the number correctly
         if (cellElement.classList.contains('selected')) {
             circle.classList.add('selected');
         }
@@ -165,8 +181,9 @@ export function drawNumbersOnSvg(numberPositions, puzzleGrid, cellSize) {
         elements.numbersSvgElement.appendChild(text);
         newSvgElements[cellKey] = { circle, text };
     }
-    setSvgElements(newSvgElements);
+    setSvgElements(newSvgElements); // Update the stored references
 }
+
 
 export function updateSvgNumberSelection(cellKey, isSelected) {
     const { svgNumberElements } = getState();
@@ -190,22 +207,70 @@ export function updatePathGradient(colors) {
 }
 
 export function showGeneratingText() {
-    elements.puzzleGridElement.innerHTML = '<div class="generating-text">Generating Level...<br/>Please Wait</div>';
+    const { gridRows, gridCols, calculatedCellSize } = getState();
+    const currentHeight = gridRows * calculatedCellSize;
+    const currentWidth = gridCols * calculatedCellSize;
+
+    clearSvgPath(); // Clears only path elements now
+    if (elements.numbersSvgElement) { // Explicitly clear numbers SVG too
+        elements.numbersSvgElement.innerHTML = '';
+    }
+    setSvgElements({}); // Reset number element references
+
+    elements.puzzleGridElement.innerHTML = '';
+    elements.puzzleGridElement.style.minHeight = `${currentHeight || 100}px`;
+    elements.puzzleGridElement.style.minWidth = `${currentWidth || 100}px`;
     elements.puzzleGridElement.style.gridTemplateRows = ``;
     elements.puzzleGridElement.style.gridTemplateColumns = ``;
+
+    const generatingDiv = document.createElement('div');
+    generatingDiv.className = 'generating-text';
+    generatingDiv.innerHTML = 'Generating Level...<br/>Please Wait';
+    elements.puzzleGridElement.appendChild(generatingDiv);
 }
 
+
 export function showGenerationErrorText(message) {
-    elements.puzzleGridElement.innerHTML = `<div class="generating-text">${message}</div>`;
+    const { gridRows, gridCols, calculatedCellSize } = getState();
+    const currentHeight = gridRows * calculatedCellSize;
+    const currentWidth = gridCols * calculatedCellSize;
+    clearSvgPath();
+    if (elements.numbersSvgElement) {
+        elements.numbersSvgElement.innerHTML = '';
+    }
+    setSvgElements({});
+    elements.puzzleGridElement.innerHTML = '';
+    elements.puzzleGridElement.style.minHeight = `${currentHeight || 100}px`;
+    elements.puzzleGridElement.style.minWidth = `${currentWidth || 100}px`;
+    elements.puzzleGridElement.style.gridTemplateRows = ``;
+    elements.puzzleGridElement.style.gridTemplateColumns = ``;
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'generating-text';
+    errorDiv.textContent = message;
+    elements.puzzleGridElement.appendChild(errorDiv);
 }
 
 
 export function updateButtonStates(state) {
-    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue } = state;
+    const { level, points, currentPath, isGameOver, isGenerating, isPaused, isAnimatingClick, gridRows, gridCols, xCells, expectedNextValue, waypointPositions } = state;
     const canInteract = !isGameOver && !isGenerating && !isPaused && !isAnimatingClick;
     const canPause = !isGameOver && !isGenerating;
     const targetPathLength = gridRows * gridCols;
-    const isGameWon = isGameOver && currentPath.length === targetPathLength && expectedNextValue > xCells;
+
+    let allWaypointsVisited = true;
+    if (isGameOver && waypointPositions.size > 0) {
+        const visitedCoords = new Set(currentPath.map(step => `${step.cell.dataset.row}-${step.cell.dataset.col}`));
+        for (const waypointCoord of waypointPositions) {
+            if (!visitedCoords.has(waypointCoord)) {
+                allWaypointsVisited = false;
+                break;
+            }
+        }
+    } else if (waypointPositions.size > 0 && !isGameOver) {
+        allWaypointsVisited = false;
+    }
+
+    const isGameWon = isGameOver && currentPath.length === targetPathLength && expectedNextValue > xCells && allWaypointsVisited;
 
     elements.undoButton.disabled = !canInteract || currentPath.length <= 0;
     elements.clearPathButton.disabled = !canInteract || currentPath.length === 0;

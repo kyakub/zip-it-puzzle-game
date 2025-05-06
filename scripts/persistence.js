@@ -36,6 +36,7 @@ export function saveFullGameState() {
 
     const pathData = getPathForSave();
     const wallData = Array.from(state.wallPositions);
+    const waypointData = Array.from(state.waypointPositions); // Convert Set
 
     const stateToSave = {
         level: state.level,
@@ -50,6 +51,7 @@ export function saveFullGameState() {
         expectedNextValue: state.expectedNextValue,
         numberPositions: state.numberPositions,
         wallPositions: wallData,
+        waypointPositions: waypointData, // Save waypoints
         currentGradientColors: state.currentGradientColors,
         currentPathData: pathData,
         pathPointsData: state.pathPoints,
@@ -70,13 +72,15 @@ export function loadFullGameState() {
             && typeof parsedState.timeRemaining === 'number'
             && parsedState.numberPositions
             && Array.isArray(parsedState.wallPositions)
+            && Array.isArray(parsedState.waypointPositions) // Check waypoints array
             && Array.isArray(parsedState.currentGradientColors)
             && parsedState.currentGradientColors.length === 2) {
             removeData(config.STORAGE_KEY_GAME_STATE);
             parsedState.wallPositions = new Set(parsedState.wallPositions);
+            parsedState.waypointPositions = new Set(parsedState.waypointPositions); // Convert back to Set
             return parsedState;
         } else {
-            console.warn("Invalid saved state found, clearing.");
+            console.warn("Invalid saved state found (check waypoints?), clearing.");
             clearFullGameState();
             return null;
         }

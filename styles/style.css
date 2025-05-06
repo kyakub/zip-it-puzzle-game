@@ -106,7 +106,9 @@ h1 {
     position: relative;
     background-color: #fff;
     min-height: 280px;
+    /* Preserved manual change */
     min-width: 280px;
+    /* Preserved manual change */
     width: min-content;
     height: min-content;
     transition: filter 0.3s ease;
@@ -140,6 +142,7 @@ h1 {
 
 .cell.selected {
     background-color: #f5f5f5;
+    /* Preserved manual change */
 }
 
 .cell.wall-below {
@@ -148,6 +151,32 @@ h1 {
 
 .cell.wall-right {
     border-right: 3px solid #333 !important;
+}
+
+/* Waypoint Styling */
+.cell.waypoint .waypoint-marker {
+    width: 10px;
+    height: 10px;
+    background-color: #888;
+    /* Grey dot for waypoint */
+    border-radius: 50%;
+    position: absolute;
+    /* Slightly offset if needed */
+    /* top: 50%; left: 50%; transform: translate(-50%, -50%); */
+    opacity: 0.6;
+    /* Make it slightly subtle */
+    pointer-events: none;
+    /* Marker shouldn't interfere with clicks */
+    z-index: 5;
+    /* Ensure it's visible */
+}
+
+/* Style for when a waypoint is visited */
+.cell.waypoint.selected .waypoint-marker,
+.cell.waypoint.waypoint-visited .waypoint-marker {
+    background-color: #333;
+    /* Darker dot when visited */
+    opacity: 0.8;
 }
 
 
@@ -329,8 +358,7 @@ button:focus {
     color: #555;
     font-style: italic;
     text-align: center;
-    grid-column: 1 / -1;
-    grid-row: 1 / -1;
+    /* Removed grid-column/row span for absolute positioning */
     padding: 15px;
     box-sizing: border-box;
     position: absolute;
@@ -605,5 +633,10 @@ button:focus {
 
     .numbers-svg .number-circle-bg {
         stroke-width: 1px;
+    }
+
+    .cell.waypoint .waypoint-marker {
+        width: 8px;
+        height: 8px;
     }
 }
