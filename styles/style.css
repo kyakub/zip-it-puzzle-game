@@ -105,8 +105,8 @@ h1 {
     gap: 0;
     position: relative;
     background-color: #fff;
-    min-height: 100px;
-    min-width: 100px;
+    min-height: 280px;
+    min-width: 280px;
     width: min-content;
     height: min-content;
     transition: filter 0.3s ease;
@@ -170,31 +170,21 @@ h1 {
 #gamePath {
     fill: none;
     stroke: url(#pathGradient);
-    /* Use the defined gradient */
     stroke-width: 35;
-    /* Base width, updated by JS */
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-/* Remove fixed stroke color, JS will set it */
 #tempPathSegment {
     fill: none;
-    /* stroke: #555; */
-    /* REMOVED */
     stroke-linecap: round;
     visibility: hidden;
-    /* Stroke width set by JS */
 }
 
-/* Remove fixed stroke color, JS will set it */
 .click-animation-segment {
     fill: none;
-    /* stroke: #555; */
-    /* REMOVED */
     stroke-linecap: round;
     transition: stroke-dashoffset 0.1s ease-out;
-    /* Stroke width set by JS */
 }
 
 .numbers-svg {
