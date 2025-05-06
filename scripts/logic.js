@@ -28,50 +28,92 @@ function getDirection(r1, c1, r2, c2) {
     return null;
 }
 
-function calculateWallScore(wallKey, pathCoords, turnCells, numberCoords, allowedWallLocationsSet) {
-    let score = 0;
+// --- Sophisticated Placement Helpers ---
+
+// Check how many non-path, non-wall borders a cell has (potential exits)
+function countOpenNeighbors(r, c, wallPositions, pathSegments) {
+    let openCount = 0;
+    const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
+    const { gridRows, gridCols } = getState();
+
+    for (const [nr, nc] of neighbors) {
+        if (isValid(nr, nc)) { // Check grid bounds first
+            let wallKey;
+            if (nr !== r) { // Vertical move check
+                wallKey = `H_${Math.min(r, nr)}_${c}`;
+            } else { // Horizontal move check
+                wallKey = `V_${r}_${Math.min(c, nc)}`;
+            }
+            // It's an open neighbor if there's no wall AND the path doesn't use this segment
+            if (!wallPositions.has(wallKey) && !pathSegments.has(wallKey)) {
+                openCount++;
+            }
+        }
+    }
+    return openCount;
+}
+
+
+function calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, numberCoords, allowedWallLocationsSet) {
+    let score = Math.random() * 0.5; // Base random score for tie-breaking
     const wallType = wallKey[0];
     const [r, c] = wallKey.substring(2).split('_').map(Number);
 
-    let cell1, cell2;
-    if (wallType === 'H') {
-        cell1 = `${r}_${c}`;
-        cell2 = `${r + 1}_${c}`;
-    } else {
-        cell1 = `${r}_${c}`;
-        cell2 = `${r}_${c + 1}`;
+    let r1, c1, r2, c2; // Coords of the two cells separated by the wall
+    if (wallType === 'H') { r1 = r; c1 = c; r2 = r + 1; c2 = c; }
+    else { r1 = r; c1 = c; r2 = r; c2 = c + 1; }
+
+    const cell1Str = `${r1}-${c1}`;
+    const cell2Str = `${r2}-${c2}`;
+
+    // --- Scoring Criteria ---
+
+    // 1. Proximity to Turns (High Impact)
+    if (turnCells.has(cell1Str) || turnCells.has(cell2Str)) {
+        score += 5;
     }
 
-    const cellCoordsToCheck = [cell1.replace('_', '-'), cell2.replace('_', '-')];
+    // 2. Proximity to Numbers (Medium Impact, higher for non-start/end)
+    let numberProximityScore = 0;
+    if (numberCoords.has(cell1Str)) {
+        const numValue = numberCoords.get(cell1Str);
+        numberProximityScore += (numValue === 1 || numValue === numberCoords.size) ? 1 : 2;
+    }
+    if (numberCoords.has(cell2Str)) {
+        const numValue = numberCoords.get(cell2Str);
+        numberProximityScore += (numValue === 1 || numValue === numberCoords.size) ? 1 : 2;
+    }
+    score += numberProximityScore;
 
-    if (turnCells.has(cellCoordsToCheck[0]) || turnCells.has(cellCoordsToCheck[1])) {
-        score += 3;
+    // 3. Blocking Parallel Path (Medium-High Impact)
+    // Check if this wall runs parallel and adjacent to a path segment
+    let parallelSegmentKey = null;
+    if (wallType === 'H') { // Horizontal wall, check for path segment below or above
+        parallelSegmentKey = `H_${r1 - 1}_${c1}`; // Path segment above?
+        if (pathSegments.has(parallelSegmentKey)) score += 3;
+        parallelSegmentKey = `H_${r2}_${c2}`; // Path segment below?
+        if (pathSegments.has(parallelSegmentKey)) score += 3;
+    } else { // Vertical wall, check for path segment left or right
+        parallelSegmentKey = `V_${r1}_${c1 - 1}`; // Path segment left?
+        if (pathSegments.has(parallelSegmentKey)) score += 3;
+        parallelSegmentKey = `V_${r2}_${c2}`; // Path segment right?
+        if (pathSegments.has(parallelSegmentKey)) score += 3;
     }
 
-    if (numberCoords.has(cellCoordsToCheck[0])) {
-        const numValue = numberCoords.get(cellCoordsToCheck[0]);
-        if (numValue > 1) score += 2; else score += 1;
-    }
-    if (numberCoords.has(cellCoordsToCheck[1])) {
-        const numValue = numberCoords.get(cellCoordsToCheck[1]);
-        if (numValue > 1) score += 2; else score += 1;
+    // 4. Creating Bottlenecks (Lower Impact - Crude Approximation)
+    // If placing this wall reduces open neighbors for either cell
+    // Note: This is a simplified check; true bottleneck analysis is complex
+    const openNeighbors1 = countOpenNeighbors(r1, c1, new Set([wallKey]), pathSegments); // Check as if wall exists
+    const openNeighbors2 = countOpenNeighbors(r2, c2, new Set([wallKey]), pathSegments);
+    if (openNeighbors1 <= 1 || openNeighbors2 <= 1) { // If placing wall leaves 1 or 0 exits
+        score += 1;
     }
 
-    const [r1, c1_] = cell1.split('_').map(Number);
-    const [r2, c2_] = cell2.split('_').map(Number);
-    const neighborsToCheck = [
-        `H_${r1 - 1}_${c1_}`, `H_${r1}_${c1_}`, `V_${r1}_${c1_ - 1}`, `V_${r1}_${c1_}`,
-        `H_${r2 - 1}_${c2_}`, `H_${r2}_${c2_}`, `V_${r2}_${c2_ - 1}`, `V_${r2}_${c2_}`
-    ];
-    for (const neighborWall of neighborsToCheck) {
-        if (neighborWall !== wallKey && allowedWallLocationsSet.has(neighborWall)) {
-            score += 0.5;
-            break;
-        }
-    }
     return score;
 }
 
+
+// Updated function to use scoring
 function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     const walls = new Set();
     const pathSegments = new Set();
@@ -102,17 +144,14 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     const allowedWallLocations = possibleWalls.filter(wallKey => !pathSegments.has(wallKey));
     const allowedWallLocationsSet = new Set(allowedWallLocations);
 
+    if (allowedWallLocations.length === 0) return walls; // No place for walls
+
     const scoredWalls = allowedWallLocations.map(wallKey => ({
         key: wallKey,
-        score: calculateWallScore(wallKey, pathCoords, turnCells, numberCoords, allowedWallLocationsSet)
+        score: calculateWallScore(wallKey, pathCoords, pathSegments, turnCells, numberCoords, allowedWallLocationsSet)
     }));
 
-    scoredWalls.sort((a, b) => {
-        if (b.score !== a.score) {
-            return b.score - a.score;
-        }
-        return Math.random() - 0.5;
-    });
+    scoredWalls.sort((a, b) => b.score - a.score); // Sort descending by score
 
     for (let i = 0; i < Math.min(numWalls, scoredWalls.length); i++) {
         walls.add(scoredWalls[i].key);
@@ -121,20 +160,77 @@ function generateWallPositions(pathCoords, numWalls, rows, cols, numberCoords) {
     return walls;
 }
 
-function generateWaypointPositions(hamiltonianPath, numberCoords, numWaypoints) {
+
+// Updated to place waypoints more strategically
+function generateWaypointPositions(hamiltonianPath, numberCoords, wallPositions, numWaypoints) {
     const waypoints = new Set();
     const emptyPathCells = hamiltonianPath.filter(coord => !numberCoords.has(coord));
 
-    shuffle(emptyPathCells);
-
-    for (let i = 0; i < Math.min(numWaypoints, emptyPathCells.length); i++) {
-        waypoints.add(emptyPathCells[i]);
+    if (numWaypoints <= 0 || emptyPathCells.length < numWaypoints) {
+        return waypoints; // Not enough candidates or not needed
     }
+
+    // --- Scoring for Waypoints ---
+    const scoredCandidates = emptyPathCells.map(coord => {
+        const [r, c] = parseCoord(coord);
+        let score = Math.random() * 0.5; // Base random score
+
+        // 1. Prioritize cells in bottlenecks (few non-wall, non-path neighbors)
+        const pathSegments = new Set(); // Need to recalculate path segments locally
+        for (let i = 0; i < hamiltonianPath.length - 1; i++) {
+            const [r1, c1] = parseCoord(hamiltonianPath[i]);
+            const [r2, c2] = parseCoord(hamiltonianPath[i + 1]);
+            let segmentKey;
+            if (r1 === r2) { segmentKey = `V_${r1}_${Math.min(c1, c2)}`; }
+            else { segmentKey = `H_${Math.min(r1, r2)}_${c1}`; }
+            pathSegments.add(segmentKey);
+        }
+        const openNeighbors = countOpenNeighbors(r, c, wallPositions, pathSegments);
+        if (openNeighbors === 1) score += 5; // Highest priority for dead ends (forced turns) created by walls
+        else if (openNeighbors === 2) score += 3; // High priority for corridor cells
+
+        // 2. Prioritize cells roughly between numbers
+        const currentIndex = hamiltonianPath.indexOf(coord);
+        let distToPrevNum = Infinity;
+        let distToNextNum = Infinity;
+        for (let i = currentIndex - 1; i >= 0; i--) {
+            if (numberCoords.has(hamiltonianPath[i])) {
+                distToPrevNum = currentIndex - i;
+                break;
+            }
+        }
+        for (let i = currentIndex + 1; i < hamiltonianPath.length; i++) {
+            if (numberCoords.has(hamiltonianPath[i])) {
+                distToNextNum = i - currentIndex;
+                break;
+            }
+        }
+        // Higher score if reasonably far from both numbers
+        if (distToPrevNum > 3 && distToNextNum > 3) {
+            score += 1;
+        }
+        // Slightly higher score if it's roughly in the middle
+        if (distToPrevNum > 1 && distToNextNum > 1 && Math.abs(distToPrevNum - distToNextNum) <= 2) {
+            score += 0.5;
+        }
+
+        return { coord: coord, score: score };
+    });
+
+    // Sort by score descending
+    scoredCandidates.sort((a, b) => b.score - a.score);
+
+    // Select top N candidates
+    for (let i = 0; i < Math.min(numWaypoints, scoredCandidates.length); i++) {
+        waypoints.add(scoredCandidates[i].coord);
+    }
+
     return waypoints;
 }
 
+
 function finishPuzzleGeneration(hamiltonianPath) {
-    const { gridRows, gridCols, xCells, calculatedCellSize, wallPositions, numberPositions, waypointPositions } = getState();
+    const { gridRows, gridCols, calculatedCellSize, wallPositions, numberPositions, waypointPositions } = getState();
 
     const pathLength = hamiltonianPath.length;
     if (pathLength !== gridRows * gridCols) {
@@ -164,11 +260,56 @@ function getTentativeNumberPositions(hamiltonianPath, xCells, rows, cols) {
     }
     if (xCells > 2) {
         const intermediatePathIndices = Array.from({ length: pathLength - 2 }, (_, i) => i + 1);
-        const shuffledIntermediate = shuffle(intermediatePathIndices);
-        const chosenIntermediateIndices = shuffledIntermediate.slice(0, xCells - 2).sort((a, b) => a - b);
 
-        for (let i = 0; i < chosenIntermediateIndices.length; i++) {
-            const pathIndex = chosenIntermediateIndices[i];
+        // More strategic placement - try to space them out more
+        let availableIndices = [...intermediatePathIndices];
+        shuffle(availableIndices); // Still shuffle to pick candidates
+        const chosenIndices = [];
+        const numIntermediate = xCells - 2;
+        const idealSpacing = Math.floor(pathLength / (xCells - 1)); // Approx spacing
+
+        let lastPlacedIndex = 0;
+        // Try to pick points that are roughly idealSpacing apart
+        // This is a heuristic, not perfect
+        while (chosenIndices.length < numIntermediate && availableIndices.length > 0) {
+            let bestCandidateIndex = -1;
+            let bestDistDiff = Infinity;
+
+            for (let i = 0; i < availableIndices.length; ++i) {
+                const currentIdx = availableIndices[i];
+                const dist = currentIdx - lastPlacedIndex;
+                const distDiff = Math.abs(dist - idealSpacing);
+
+                if (dist > 2) { // Ensure not too close to previous
+                    if (bestCandidateIndex === -1 || distDiff < bestDistDiff) {
+                        bestDistDiff = distDiff;
+                        bestCandidateIndex = i;
+                    } else if (distDiff === bestDistDiff && Math.random() > 0.5) {
+                        // Randomly break ties for same distance difference
+                        bestCandidateIndex = i;
+                    }
+                }
+            }
+
+            if (bestCandidateIndex !== -1) {
+                const chosenIdx = availableIndices.splice(bestCandidateIndex, 1)[0];
+                chosenIndices.push(chosenIdx);
+                lastPlacedIndex = chosenIdx;
+            } else {
+                // If no suitable spaced candidate found, just pick one randomly
+                if (availableIndices.length > 0) {
+                    const chosenIdx = availableIndices.pop(); // Get last random one
+                    chosenIndices.push(chosenIdx);
+                    lastPlacedIndex = chosenIdx; // Update lastPlacedIndex anyway
+                }
+            }
+        }
+
+        // Sort the chosen indices to place numbers in order
+        chosenIndices.sort((a, b) => a - b);
+
+        for (let i = 0; i < chosenIndices.length; i++) {
+            const pathIndex = chosenIndices[i];
             numberPositions.set(hamiltonianPath[pathIndex], i + 2);
         }
     }
@@ -279,7 +420,7 @@ export function startLevel(levelNumber, restoredState = null) {
         levelGenerator.generateLevelAsync(gridRows, gridCols, (hamiltonianPath) => {
             const tentativeNumberCoords = getTentativeNumberPositions(hamiltonianPath, xCells, gridRows, gridCols);
             const newWallPositions = generateWallPositions(hamiltonianPath, currentLevelParams.numWalls, gridRows, gridCols, tentativeNumberCoords);
-            const newWaypointPositions = generateWaypointPositions(hamiltonianPath, tentativeNumberCoords, currentLevelParams.numWaypoints);
+            const newWaypointPositions = generateWaypointPositions(hamiltonianPath, tentativeNumberCoords, newWallPositions, currentLevelParams.numWaypoints); // Pass walls here
             const finalNumberPositions = {};
             tentativeNumberCoords.forEach((value, key) => { finalNumberPositions[key] = value; });
 
@@ -380,7 +521,6 @@ export function undoLastStep(isDuringDrag) {
     }
 }
 
-// Updated clearPath function
 export function clearPath() {
     const state = getState();
     if (state.isGameOver || state.isGenerating || state.isDrawing || state.isPaused || state.currentPath.length === 0) {
@@ -399,15 +539,13 @@ export function clearPath() {
             if (step.cell.classList.contains('waypoint')) {
                 step.cell.classList.remove('waypoint-visited');
             }
-            ui.updateSvgNumberSelection(cellKey, false); // Deselect number circle
+            ui.updateSvgNumberSelection(cellKey, false);
         }
     });
 
     updateState({ currentPath: [], pathPoints: [], expectedNextValue: 1 });
-    ui.clearSvgPath(); // Clear the drawn line
+    ui.clearSvgPath();
 
-    // Redraw the numbers in their initial (unselected) state
-    // This is important because updateSvgNumberSelection only changes existing elements
     ui.drawNumbersOnSvg(state.numberPositions, state.currentPuzzle, state.calculatedCellSize);
 
     audio.playSound('soundError');
